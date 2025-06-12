@@ -38,10 +38,23 @@
 
 #define NUMBER_OF_PHYSICAL_PAGES   ((VIRTUAL_ADDRESS_SIZE / PAGE_SIZE) / 64)
 
-BOOL
-GetPrivilege  (
-    VOID
-    )
+
+
+
+// TODO:
+// Make page table structs and VA -> PTE method
+// Make physical page free/active lists + their functions
+// Make test
+
+
+#define NUMBER_OF_VIRTUAL_PAGES     (4)
+
+
+
+
+
+
+BOOL GetPrivilege  (VOID)
 {
     struct {
         DWORD Count;
@@ -156,10 +169,7 @@ CreateSharedMemorySection (
 
 #endif
 
-VOID
-malloc_test (
-    VOID
-    )
+VOID malloc_test (VOID)
 {
     unsigned i;
     PULONG_PTR p;
@@ -213,10 +223,7 @@ malloc_test (
     return;
 }
 
-VOID
-commit_at_fault_time_test (
-    VOID
-    )
+VOID commit_at_fault_time_test (VOID)
 {
     unsigned i;
     PULONG_PTR p;
@@ -312,10 +319,43 @@ commit_at_fault_time_test (
     return;
 }
 
-VOID
-full_virtual_memory_test (
-    VOID
-    )
+
+
+typedef struct {
+    // Can change to uint8_t later maybe.
+    // Also, if it is true, this is a valid PTE. If false, means it isn't or was swapped to disk.
+    boolean isValid;
+
+    // Physical frame number, or -1 if not mapped
+    int frameNumber;
+
+    // If swapped to disk, where is it, or -1 if not swapped
+    int disk_index;
+} PageTableEntry;
+
+
+PageTableEntry* pageTable = malloc(NUMBER_OF_VIRTUAL_PAGES * sizeof(PageTableEntry));
+
+
+
+PageTableEntry* VAToPageTableEntry(ULONG_PTR virtualAddress) {
+
+
+
+
+
+    return __null;
+}
+
+
+
+
+
+
+
+
+
+VOID full_virtual_memory_test (VOID)
 {
     unsigned i;
     PULONG_PTR p;
