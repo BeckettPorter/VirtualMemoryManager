@@ -38,19 +38,7 @@
 
 #define NUMBER_OF_PHYSICAL_PAGES   ((VIRTUAL_ADDRESS_SIZE / PAGE_SIZE) / 64)
 
-
-
-
-// TODO:
-// Make page table structs and VA -> PTE method
-// Make physical page free/active lists + their functions
-// Make test
-
-
-#define NUMBER_OF_VIRTUAL_PAGES     (4)
-
-
-
+#define NUMBER_OF_VIRTUAL_PAGES     (4096)
 
 
 
@@ -319,10 +307,14 @@ VOID commit_at_fault_time_test (VOID)
     return;
 }
 
+// TODO:
+// Make page table struct and VA -> PTE method - Done
+// Make physical page free/active lists + their functions
+// Make test
 
 
 typedef struct {
-    // Can change to uint8_t later maybe.
+    // Can change to uint8_t later maybe to save space, fine for now tho.
     // Also, if it is true, this is a valid PTE. If false, means it isn't or was swapped to disk.
     boolean isValid;
 
@@ -334,19 +326,30 @@ typedef struct {
 } PageTableEntry;
 
 
+// Variables
 PageTableEntry* pageTable = malloc(NUMBER_OF_VIRTUAL_PAGES * sizeof(PageTableEntry));
+void* vaStartLoc;
 
 
+PageTableEntry* VAToPageTableEntry(void* virtualAddress)
+{
+    int index = ((uintptr_t)virtualAddress - (uintptr_t)vaStartLoc) / PAGE_SIZE;
 
-PageTableEntry* VAToPageTableEntry(ULONG_PTR virtualAddress) {
+    PageTableEntry* entry = &pageTable[index];
 
-
-
-
-
-    return __null;
+    return entry;
 }
 
+
+void* PageTableEntryToVA(PageTableEntry* entry)
+{
+    // To get the location VA thingy, subtract start of page table from entry
+    int index = (entry - pageTable);
+
+    int pointer = (index * PAGE_SIZE) + vaStartLoc;
+
+    return (void*)pointer;
+}
 
 
 
@@ -358,7 +361,6 @@ PageTableEntry* VAToPageTableEntry(ULONG_PTR virtualAddress) {
 VOID full_virtual_memory_test (VOID)
 {
     unsigned i;
-    PULONG_PTR p;
     PULONG_PTR arbitrary_va;
     unsigned random_number;
     BOOL allocated;
@@ -464,14 +466,14 @@ VOID full_virtual_memory_test (VOID)
 
 #else
 
-    p = VirtualAlloc (NULL,
+    vaStartLoc = VirtualAlloc (NULL,
                       virtual_address_size,
                       MEM_RESERVE | MEM_PHYSICAL,
                       PAGE_READWRITE);
 
 #endif
 
-    if (p == NULL) {
+    if (vaStartLoc == NULL) {
 
         printf ("full_virtual_memory_test : could not reserve memory %x\n",
                 GetLastError ());
@@ -519,7 +521,7 @@ VOID full_virtual_memory_test (VOID)
 
         random_number &= ~0x7;
 
-        arbitrary_va = p + random_number;
+        arbitrary_va = vaStartLoc + random_number;
 
         __try {
 
@@ -579,7 +581,7 @@ VOID full_virtual_memory_test (VOID)
     // citizen and free it.
     //
 
-    VirtualFree (p, 0, MEM_RELEASE);
+    VirtualFree (vaStartLoc, 0, MEM_RELEASE);
 
     return;
 }
