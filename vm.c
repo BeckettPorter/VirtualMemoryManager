@@ -40,7 +40,7 @@
 
 #define NUMBER_OF_VIRTUAL_PAGES     (4096)
 
-
+#define NUMBER_OF_PHYSICAL_FRAMES   (4096)
 
 BOOL GetPrivilege  (VOID)
 {
@@ -319,7 +319,7 @@ typedef struct {
     boolean isValid;
 
     // Physical frame number, or -1 if not mapped
-    int frameNumber;
+    int pageFrameNumber;
 
     // If swapped to disk, where is it, or -1 if not swapped
     int disk_index;
@@ -350,6 +350,71 @@ void* PageTableEntryToVA(PageTableEntry* entry)
 
     return (void*)pointer;
 }
+
+typedef struct Frame
+{
+    int physicalFrameNumber;
+    struct Frame* nextPFN;
+} Frame;
+
+
+Frame* freeList = NULL;
+Frame* activeList = NULL;
+
+
+
+VOID initFreeList()
+{
+    Frame frames[NUMBER_OF_PHYSICAL_FRAMES];
+
+    for (int i = 0; i < NUMBER_OF_PHYSICAL_FRAMES; ++i)
+    {
+        frames[i].physicalFrameNumber = i;
+        frames[i].nextPFN = freeList;
+        freeList = &frames[i];
+    }
+}
+
+Frame* getFreeFrame()
+{
+    if (freeList == NULL)
+    {
+        return NULL;
+    }
+
+    // Get first frame from free list and set head to next one.
+    Frame* frame = freeList;
+    freeList = freeList->nextPFN;
+
+    // Add to active list
+    frame->nextPFN = activeList;
+    activeList = frame;
+
+    return frame;
+}
+
+Frame* evictFrame()
+{
+    // Return NULL if we don't have any active frames to evict
+    if (activeList == NULL)
+    {
+        return NULL;
+    }
+
+
+}
+
+VOID releaseFrame(Frame* frame)
+{
+    // Add back to free list
+    frame->nextPFN = freeList;
+    freeList = frame;
+
+    // Now need to remove from active list
+    evictFrame();
+}
+
+
 
 
 
@@ -386,7 +451,9 @@ VOID full_virtual_memory_test (VOID)
     if (privilege == FALSE) {
         printf ("full_virtual_memory_test : could not get privilege\n");
         return;
-    }    
+    }
+
+    initFreeList();
 
 #if SUPPORT_MULTIPLE_VA_TO_SAME_PAGE
 
