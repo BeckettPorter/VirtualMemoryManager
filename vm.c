@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <windows.h>
 
+#include "timer/timer.h"
+
 //
 // This define enables code that lets us create multiple virtual address
 // mappings to a single physical page.  We only/need want this if/when we
@@ -37,8 +39,6 @@
 //
 
 #define NUMBER_OF_PHYSICAL_PAGES   ((VIRTUAL_ADDRESS_SIZE / PAGE_SIZE) / 64)
-
-#define NUMBER_OF_VIRTUAL_PAGES     (4096)
 
 BOOL GetPrivilege  (VOID)
 {
@@ -331,6 +331,7 @@ typedef struct Frame
 {
     ULONG64 physicalFrameNumber;
     struct Frame* nextPFN;
+    PageTableEntry* PTE;
 } Frame;
 
 
@@ -339,11 +340,11 @@ typedef struct Frame
 PageTableEntry* pageTable;
 void* vaStartLoc;
 PULONG_PTR physical_page_numbers;
-
+ULONG_PTR physical_page_count;
 Frame* pfnArray;
 
-Frame* freeList = NULL;
-Frame* activeList = NULL;
+Frame* freeList;
+Frame* activeList;
 
 
 
@@ -367,31 +368,25 @@ void* PageTableEntryToVA(PageTableEntry* entry)
     return (void*)pointer;
 }
 
-VOID initLists()
+void initLists()
 {
+    ULONG64 count = physical_page_count;  // how many pages AllocateUserPhysicalPages actually returned
+
     pageTable = malloc(VIRTUAL_ADDRESS_SIZE / PAGE_SIZE * sizeof(PageTableEntry));
+    memset(pageTable, 0, VIRTUAL_ADDRESS_SIZE / PAGE_SIZE * sizeof(PageTableEntry));
 
-    ULONG64 maxFoundPFN = 0;
+    // build PFN list only from actually owned pages
+    pfnArray = malloc(count * sizeof(Frame));
+    freeList = NULL;
+    activeList = NULL;
 
-    // Get the highest PFN we have
-    for (int i = 0; i < NUMBER_OF_PHYSICAL_PAGES; i++)
-    {
-        if (physical_page_numbers[i] > maxFoundPFN) {
-            maxFoundPFN = physical_page_numbers[i];
-        }
-    }
-
-    ULONG64 numPhysicalFrames = maxFoundPFN + 1;
-
-    pfnArray = malloc((numPhysicalFrames) * sizeof(Frame));
-
-    for (int i = 0; i < numPhysicalFrames; ++i)
-    {
-        pfnArray[i].physicalFrameNumber = i;
+    for (ULONG64 i = 0; i < count; ++i) {
+        pfnArray[i].physicalFrameNumber = physical_page_numbers[i];
         pfnArray[i].nextPFN = freeList;
         freeList = &pfnArray[i];
     }
 }
+
 
 Frame* getFreeFrame()
 {
@@ -467,7 +462,7 @@ VOID full_virtual_memory_test (VOID)
     BOOL page_faulted;
     BOOL privilege;
     BOOL obtained_pages;
-    ULONG_PTR physical_page_count;
+
     HANDLE physical_page_handle;
     ULONG_PTR virtual_address_size;
     ULONG_PTR virtual_address_size_in_unsigned_chunks;
@@ -625,7 +620,8 @@ VOID full_virtual_memory_test (VOID)
 
         random_number &= ~0x7;
 
-        arbitrary_va = (PULONG_PTR) ((ULONG64) vaStartLoc + random_number);
+        PULONG_PTR vaStart = vaStartLoc;
+        arbitrary_va = vaStart + random_number;
 
         __try {
 
@@ -641,6 +637,25 @@ VOID full_virtual_memory_test (VOID)
 
             // TODO:
             // Go get a free page from free list, map the arbitrary VA to it (get Frame number from PFN),
+
+
+
+            if (freeList == NULL) {
+                // printf("Ran out of frames, evicting!!");
+
+                Frame* victim = evictFrame();
+
+                // unmap the old VA
+                MapUserPhysicalPages(PageTableEntryToVA(victim->PTE), 1, NULL);
+                // mark PTE as invalid
+                victim->PTE->isValid = 0;
+                // Do this later when adding it to the disk
+                // victim->PTE->disk_index = something?
+
+                // Return to the free list
+                victim->nextPFN = freeList;
+                freeList = victim;
+            }
 
             Frame* arbitraryFrame = getFreeFrame();
 
@@ -658,12 +673,11 @@ VOID full_virtual_memory_test (VOID)
             // Calc PTE for this VA
 
             PageTableEntry* arbitraryPTE = VAToPageTableEntry(arbitrary_va);
+            arbitraryFrame->PTE = arbitraryPTE;
 
             arbitraryPTE->isValid = 1;
             arbitraryPTE->pageFrameNumber = arbitraryFrame->physicalFrameNumber;
             // Fill in fields for PTE (valid bit)
-
-            // take off free list, add to active list
 
             //
             // No exception handler needed now since we have connected
@@ -754,7 +768,8 @@ main (
     // This is where we can be as creative as we like, the sky's the limit !
     //
 
+    startTimer("Virtual Memory Test");
     full_virtual_memory_test ();
-
+    endTimer("Virtual Memory Test");
     return;
 }
