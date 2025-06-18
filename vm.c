@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <windows.h>
 
-#include "timer/timer.h"
-
 //
 // This define enables code that lets us create multiple virtual address
 // mappings to a single physical page.  We only/need want this if/when we
@@ -768,8 +766,8 @@ main (
     // This is where we can be as creative as we like, the sky's the limit !
     //
 
-    startTimer("Virtual Memory Test");
+    // startTimer("Virtual Memory Test");
     full_virtual_memory_test ();
-    endTimer("Virtual Memory Test");
+    // endTimer("Virtual Memory Test");
     return;
 }
