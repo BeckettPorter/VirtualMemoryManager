@@ -40,8 +40,6 @@
 
 #define NUMBER_OF_VIRTUAL_PAGES     (4096)
 
-#define NUMBER_OF_PHYSICAL_FRAMES   (4096)
-
 BOOL GetPrivilege  (VOID)
 {
     struct {
@@ -312,6 +310,8 @@ VOID commit_at_fault_time_test (VOID)
 // Make physical page free/active lists + their functions
 // Make test
 
+VOID initLists();
+
 
 typedef struct {
     // Can change to uint8_t later maybe to save space, fine for now tho.
@@ -326,14 +326,30 @@ typedef struct {
 } PageTableEntry;
 
 
+// Frame is on ram, PAGES are on ram, but then copied to disk when
+typedef struct Frame
+{
+    ULONG64 physicalFrameNumber;
+    struct Frame* nextPFN;
+} Frame;
+
+
+
 // Variables
-PageTableEntry* pageTable = malloc(NUMBER_OF_VIRTUAL_PAGES * sizeof(PageTableEntry));
+PageTableEntry* pageTable;
 void* vaStartLoc;
+PULONG_PTR physical_page_numbers;
+
+Frame* pfnArray;
+
+Frame* freeList = NULL;
+Frame* activeList = NULL;
+
 
 
 PageTableEntry* VAToPageTableEntry(void* virtualAddress)
 {
-    int index = ((uintptr_t)virtualAddress - (uintptr_t)vaStartLoc) / PAGE_SIZE;
+    ULONG64 index = ((ULONG64)virtualAddress - (ULONG64)vaStartLoc) / PAGE_SIZE;
 
     PageTableEntry* entry = &pageTable[index];
 
@@ -344,39 +360,42 @@ PageTableEntry* VAToPageTableEntry(void* virtualAddress)
 void* PageTableEntryToVA(PageTableEntry* entry)
 {
     // To get the location VA thingy, subtract start of page table from entry
-    int index = (entry - pageTable);
+    ULONG64 index = (entry - pageTable);
 
-    int pointer = (index * PAGE_SIZE) + vaStartLoc;
+    ULONG64 pointer = (index * PAGE_SIZE) + (ULONG64) vaStartLoc;
 
     return (void*)pointer;
 }
 
-typedef struct Frame
+VOID initLists()
 {
-    int physicalFrameNumber;
-    struct Frame* nextPFN;
-} Frame;
+    pageTable = malloc(VIRTUAL_ADDRESS_SIZE / PAGE_SIZE * sizeof(PageTableEntry));
 
+    ULONG64 maxFoundPFN = 0;
 
-Frame* freeList = NULL;
-Frame* activeList = NULL;
-
-
-
-VOID initFreeList()
-{
-    Frame frames[NUMBER_OF_PHYSICAL_FRAMES];
-
-    for (int i = 0; i < NUMBER_OF_PHYSICAL_FRAMES; ++i)
+    // Get the highest PFN we have
+    for (int i = 0; i < NUMBER_OF_PHYSICAL_PAGES; i++)
     {
-        frames[i].physicalFrameNumber = i;
-        frames[i].nextPFN = freeList;
-        freeList = &frames[i];
+        if (physical_page_numbers[i] > maxFoundPFN) {
+            maxFoundPFN = physical_page_numbers[i];
+        }
+    }
+
+    ULONG64 numPhysicalFrames = maxFoundPFN + 1;
+
+    pfnArray = malloc((numPhysicalFrames) * sizeof(Frame));
+
+    for (int i = 0; i < numPhysicalFrames; ++i)
+    {
+        pfnArray[i].physicalFrameNumber = i;
+        pfnArray[i].nextPFN = freeList;
+        freeList = &pfnArray[i];
     }
 }
 
 Frame* getFreeFrame()
 {
+    // If our list is empty, return NULL because we couldn't find a free frame.
     if (freeList == NULL)
     {
         return NULL;
@@ -401,7 +420,23 @@ Frame* evictFrame()
         return NULL;
     }
 
+    Frame* previousFrame = NULL;
+    Frame* currentFrame = activeList;
 
+    // Walk through our PFNs until we reach the end of the array, moving them back one spot because we removed one.
+    while (currentFrame->nextPFN != NULL) {
+        previousFrame = currentFrame;
+        currentFrame = currentFrame->nextPFN;
+    }
+
+    //
+    if (previousFrame == NULL) {
+        activeList = NULL;
+    } else {
+        previousFrame->nextPFN = NULL;
+    }
+
+    return currentFrame;
 }
 
 VOID releaseFrame(Frame* frame)
@@ -433,7 +468,6 @@ VOID full_virtual_memory_test (VOID)
     BOOL privilege;
     BOOL obtained_pages;
     ULONG_PTR physical_page_count;
-    PULONG_PTR physical_page_numbers;
     HANDLE physical_page_handle;
     ULONG_PTR virtual_address_size;
     ULONG_PTR virtual_address_size_in_unsigned_chunks;
@@ -453,7 +487,7 @@ VOID full_virtual_memory_test (VOID)
         return;
     }
 
-    initFreeList();
+
 
 #if SUPPORT_MULTIPLE_VA_TO_SAME_PAGE
 
@@ -552,6 +586,9 @@ VOID full_virtual_memory_test (VOID)
     // Now perform random accesses.
     //
 
+    // CODE CAN GO HERE
+    initLists();
+
     for (i = 0; i < MB (1); i += 1) {
 
         //
@@ -588,7 +625,7 @@ VOID full_virtual_memory_test (VOID)
 
         random_number &= ~0x7;
 
-        arbitrary_va = vaStartLoc + random_number;
+        arbitrary_va = (PULONG_PTR) ((ULONG64) vaStartLoc + random_number);
 
         __try {
 
@@ -601,22 +638,32 @@ VOID full_virtual_memory_test (VOID)
 
         if (page_faulted) {
 
-            //
-            // Connect the virtual address now - if that succeeds then
-            // we'll be able to access it from now on.
-            //
-            // THIS IS JUST REUSING THE SAME PHYSICAL PAGE OVER AND OVER !
-            //
-            // IT NEEDS TO BE REPLACED WITH A TRUE MEMORY MANAGEMENT
-            // STATE MACHINE !
-            //
 
-            if (MapUserPhysicalPages (arbitrary_va, 1, physical_page_numbers) == FALSE) {
+            // TODO:
+            // Go get a free page from free list, map the arbitrary VA to it (get Frame number from PFN),
 
-                printf ("full_virtual_memory_test : could not map VA %p to page %llX\n", arbitrary_va, *physical_page_numbers);
+            Frame* arbitraryFrame = getFreeFrame();
+
+            ULONG64 frameNumber = arbitraryFrame->physicalFrameNumber;
+
+            //mupp (va,size,frameNumber)
+            if (MapUserPhysicalPages (arbitrary_va, 1, &frameNumber) == FALSE) {
+
+                printf ("full_virtual_memory_test : could not map VA %p to page %llX\n", arbitrary_va,
+                    *physical_page_numbers);
 
                 return;
             }
+
+            // Calc PTE for this VA
+
+            PageTableEntry* arbitraryPTE = VAToPageTableEntry(arbitrary_va);
+
+            arbitraryPTE->isValid = 1;
+            arbitraryPTE->pageFrameNumber = arbitraryFrame->physicalFrameNumber;
+            // Fill in fields for PTE (valid bit)
+
+            // take off free list, add to active list
 
             //
             // No exception handler needed now since we have connected
@@ -626,6 +673,9 @@ VOID full_virtual_memory_test (VOID)
 
             *arbitrary_va = (ULONG_PTR) arbitrary_va;
 
+
+
+#if 0 // this will go to trim function later
             //
             // Unmap the virtual address translation we installed above
             // now that we're done writing our value into it.
@@ -637,10 +687,10 @@ VOID full_virtual_memory_test (VOID)
 
                 return;
             }
+#endif 0
 
         }
     }
-
     printf ("full_virtual_memory_test : finished accessing %u random virtual addresses\n", i);
 
     //
