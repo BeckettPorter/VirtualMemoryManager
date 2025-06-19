@@ -6,7 +6,7 @@
 			[
 				{
 					"build" : ".",
-					"jsonFile" : "directory-.-wDebug-d0094a50bb2071803777.json",
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
 					"minimumCMakeVersion" : 
 					{
 						"string" : "3.31"
@@ -19,7 +19,7 @@
 					]
 				}
 			],
-			"name" : "wDebug",
+			"name" : "Debug",
 			"projects" : 
 			[
 				{
@@ -39,7 +39,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "VirtualMemoryManager::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-VirtualMemoryManager-wDebug-4e92d326cf107ba4691f.json",
+					"jsonFile" : "target-VirtualMemoryManager-Debug-6dae1b8c1e226cf4b251.json",
 					"name" : "VirtualMemoryManager",
 					"projectIndex" : 0
 				}

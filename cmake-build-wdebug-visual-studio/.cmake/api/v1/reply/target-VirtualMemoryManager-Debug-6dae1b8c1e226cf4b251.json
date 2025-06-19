@@ -27,7 +27,7 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 6,
+				"line" : 8,
 				"parent" : 0
 			}
 		]
@@ -38,7 +38,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "/DWIN32 /D_WINDOWS -std:c11 -MD"
+					"fragment" : "/DWIN32 /D_WINDOWS /Ob0 /Od /RTC1 -std:c11 -MDd -Zi"
 				}
 			],
 			"language" : "C",
@@ -63,11 +63,11 @@
 		"commandFragments" : 
 		[
 			{
-				"fragment" : "/DWIN32 /D_WINDOWS -MD",
+				"fragment" : "/DWIN32 /D_WINDOWS /Ob0 /Od /RTC1 -MDd -Zi",
 				"role" : "flags"
 			},
 			{
-				"fragment" : "/machine:x64  /subsystem:console",
+				"fragment" : "/machine:x64 /debug /INCREMENTAL /subsystem:console",
 				"role" : "flags"
 			},
 			{

@@ -53,7 +53,7 @@ BOOL GetPrivilege  (VOID)
     }
 
     //
-    // Enable the privilege. 
+    // Enable the privilege.
     //
 
     Info.Count = 1;
@@ -90,7 +90,7 @@ BOOL GetPrivilege  (VOID)
     if (Result == FALSE) {
         printf ("Cannot adjust token privileges %u\n", GetLastError ());
         return FALSE;
-    } 
+    }
 
     if (GetLastError () != ERROR_SUCCESS) {
         printf ("Cannot enable the SE_LOCK_MEMORY_NAME privilege - check local policy\n");
