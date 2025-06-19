@@ -1,0 +1,12 @@
+# ninja log v6
+6	356	7720607469970317	CMakeFiles/vm.dir/components/utilities.c.obj	ba35b598163f1d6d
+2	169	7720607692295618	VirtualMemoryManager.exe	58fd47aa9ffdd1d8
+2	359	7720607469940307	CMakeFiles/vm.dir/vm.c.obj	d65e86002694a2d7
+359	592	7720607473505866	vm.exe	ce88c8d1a8e6c849
+2	99	7720607586341733	CMakeFiles/VirtualMemoryManager.dir/main.c.obj	6bda88fd62a7bcd6
+9	363	7720607586411717	CMakeFiles/VirtualMemoryManager.dir/components/utilities.c.obj	dea7a06a964b9cda
+5	372	7720607586381721	CMakeFiles/VirtualMemoryManager.dir/vm.c.obj	56e1103583334f0
+2	406	7720607756678457	CMakeFiles/VirtualMemoryManager.dir/vm.c.obj	56e1103583334f0
+407	575	7720607760733289	VirtualMemoryManager.exe	2148483cec28f041
+1	342	7720608110277661	CMakeFiles/VirtualMemoryManager.dir/components/utilities.c.obj	dea7a06a964b9cda
+342	480	7720608113683173	VirtualMemoryManager.exe	2148483cec28f041
