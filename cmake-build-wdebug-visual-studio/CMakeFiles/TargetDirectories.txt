@@ -1,0 +1,3 @@
+C:/Users/porte/CLionProjects/VirtualMemoryManager/cmake-build-wdebug-visual-studio/CMakeFiles/VirtualMemoryManager.dir
+C:/Users/porte/CLionProjects/VirtualMemoryManager/cmake-build-wdebug-visual-studio/CMakeFiles/edit_cache.dir
+C:/Users/porte/CLionProjects/VirtualMemoryManager/cmake-build-wdebug-visual-studio/CMakeFiles/rebuild_cache.dir

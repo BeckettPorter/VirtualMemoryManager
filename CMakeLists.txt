@@ -3,4 +3,6 @@ project(VirtualMemoryManager C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(VirtualMemoryManager main.c)
+add_executable(VirtualMemoryManager main.c
+        components/utilities.c
+        components/utilities.h)
