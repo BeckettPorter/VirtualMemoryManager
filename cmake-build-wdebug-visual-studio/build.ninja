@@ -49,7 +49,7 @@ cmake_ninja_workdir = C$:\Users\porte\CLionProjects\VirtualMemoryManager\cmake-b
 
 build cmake_object_order_depends_target_VirtualMemoryManager: phony || .
 
-build CMakeFiles\VirtualMemoryManager.dir\main.c.obj: C_COMPILER__VirtualMemoryManager_unscanned_wDebug C$:\Users\porte\CLionProjects\VirtualMemoryManager\main.c || cmake_object_order_depends_target_VirtualMemoryManager
+build CMakeFiles\VirtualMemoryManager.dir\vm.c.obj: C_COMPILER__VirtualMemoryManager_unscanned_wDebug C$:\Users\porte\CLionProjects\VirtualMemoryManager\vm.c || cmake_object_order_depends_target_VirtualMemoryManager
   FLAGS = /DWIN32 /D_WINDOWS -std:c11 -MD
   OBJECT_DIR = CMakeFiles\VirtualMemoryManager.dir
   OBJECT_FILE_DIR = CMakeFiles\VirtualMemoryManager.dir
@@ -71,7 +71,7 @@ build CMakeFiles\VirtualMemoryManager.dir\components\utilities.c.obj: C_COMPILER
 #############################################
 # Link the executable VirtualMemoryManager.exe
 
-build VirtualMemoryManager.exe: C_EXECUTABLE_LINKER__VirtualMemoryManager_wDebug CMakeFiles\VirtualMemoryManager.dir\main.c.obj CMakeFiles\VirtualMemoryManager.dir\components\utilities.c.obj
+build VirtualMemoryManager.exe: C_EXECUTABLE_LINKER__VirtualMemoryManager_wDebug CMakeFiles\VirtualMemoryManager.dir\vm.c.obj CMakeFiles\VirtualMemoryManager.dir\components\utilities.c.obj
   FLAGS = /DWIN32 /D_WINDOWS -MD
   LINK_FLAGS = /machine:x64  /subsystem:console
   LINK_LIBRARIES = kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib

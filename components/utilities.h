@@ -11,6 +11,7 @@
 #define VIRTUAL_ADDRESS_SIZE        MB(16)
 #define VIRTUAL_ADDRESS_SIZE_IN_UNSIGNED_CHUNKS        (VIRTUAL_ADDRESS_SIZE / sizeof (ULONG_PTR))
 #define NUMBER_OF_PHYSICAL_PAGES   ((VIRTUAL_ADDRESS_SIZE / PAGE_SIZE) / 64)
+#include <windows.h>
 
 
 // Structs
@@ -46,5 +47,9 @@ Frame* pfnArray;
 Frame* freeList;
 Frame* activeList;
 
+
+// Functions
+PageTableEntry* VAToPageTableEntry(void* virtualAddress);
+void* PageTableEntryToVA(PageTableEntry* entry);
 
 #endif //UTILITIES_H
