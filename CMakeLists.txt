@@ -7,4 +7,8 @@ set(CMAKE_BUILD_TYPE Debug)
 
 add_executable(VirtualMemoryManager vm.c
         components/utilities.c
-        components/utilities.h)
+        components/utilities.h
+        components/initialize.c
+        components/initialize.h
+        components/pages.c
+        components/pages.h)

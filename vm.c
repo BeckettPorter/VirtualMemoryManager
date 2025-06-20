@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
+
+#include "components/pages.h"
 #include "components/utilities.h"
 
 //
@@ -285,104 +287,6 @@ VOID commit_at_fault_time_test (VOID)
     return;
 }
 
-// TODO:
-// Make page table struct and VA -> PTE method - Done
-// Make physical page free/active lists + their functions
-// Make test
-
-VOID initLists();
-
-
-
-
-
-
-
-void initLists()
-{
-    ULONG64 count = physical_page_count;  // how many pages AllocateUserPhysicalPages actually returned
-
-    pageTable = malloc(VIRTUAL_ADDRESS_SIZE / PAGE_SIZE * sizeof(PageTableEntry));
-    memset(pageTable, 0, VIRTUAL_ADDRESS_SIZE / PAGE_SIZE * sizeof(PageTableEntry));
-
-    // build PFN list only from actually owned pages
-    pfnArray = malloc(count * sizeof(Frame));
-    freeList = NULL;
-    activeList = NULL;
-
-    for (ULONG64 i = 0; i < count; ++i) {
-        pfnArray[i].physicalFrameNumber = physical_page_numbers[i];
-        pfnArray[i].nextPFN = freeList;
-        freeList = &pfnArray[i];
-    }
-}
-
-
-Frame* getFreeFrame()
-{
-    // If our list is empty, return NULL because we couldn't find a free frame.
-    if (freeList == NULL)
-    {
-        return NULL;
-    }
-
-    // Get first frame from free list and set head to next one.
-    Frame* frame = freeList;
-    freeList = freeList->nextPFN;
-
-    // Add to active list
-    frame->nextPFN = activeList;
-    activeList = frame;
-
-    return frame;
-}
-
-Frame* evictFrame()
-{
-    // Return NULL if we don't have any active frames to evict
-    if (activeList == NULL)
-    {
-        return NULL;
-    }
-
-    Frame* previousFrame = NULL;
-    Frame* currentFrame = activeList;
-
-    // Walk through our PFNs until we reach the end of the array, moving them back one spot because we removed one.
-    while (currentFrame->nextPFN != NULL) {
-        previousFrame = currentFrame;
-        currentFrame = currentFrame->nextPFN;
-    }
-
-    //
-    if (previousFrame == NULL) {
-        activeList = NULL;
-    } else {
-        previousFrame->nextPFN = NULL;
-    }
-
-    return currentFrame;
-}
-
-VOID releaseFrame(Frame* frame)
-{
-    // Add back to free list
-    frame->nextPFN = freeList;
-    freeList = frame;
-
-    // Now need to remove from active list
-    evictFrame();
-}
-
-
-
-
-
-
-
-
-
-
 VOID full_virtual_memory_test (VOID)
 {
     unsigned i;
@@ -511,7 +415,7 @@ VOID full_virtual_memory_test (VOID)
     // Now perform random accesses.
     //
 
-    // CODE CAN GO HERE
+
     initLists();
 
     for (i = 0; i < MB (1); i += 1) {
@@ -562,29 +466,14 @@ VOID full_virtual_memory_test (VOID)
             page_faulted = TRUE;
         }
 
-        if (page_faulted) {
-
-
-            // TODO:
-            // Go get a free page from free list, map the arbitrary VA to it (get Frame number from PFN),
-
-
+        if (page_faulted)
+        {
+            // p = p + 1;
 
             if (freeList == NULL) {
-                // printf("Ran out of frames, evicting!!");
+                // printf("Ran out of frames, evicting!");
 
-                Frame* victim = evictFrame();
-
-                // unmap the old VA
-                MapUserPhysicalPages(PageTableEntryToVA(victim->PTE), 1, NULL);
-                // mark PTE as invalid
-                victim->PTE->isValid = 0;
-                // Do this later when adding it to the disk
-                // victim->PTE->disk_index = something?
-
-                // Return to the free list
-                victim->nextPFN = freeList;
-                freeList = victim;
+                trimPage();
             }
 
             Frame* arbitraryFrame = getFreeFrame();
@@ -601,13 +490,13 @@ VOID full_virtual_memory_test (VOID)
             }
 
             // Calc PTE for this VA
-
             PageTableEntry* arbitraryPTE = VAToPageTableEntry(arbitrary_va);
             arbitraryFrame->PTE = arbitraryPTE;
 
+            // Fill in fields for PTE (valid bit, page frame number)
             arbitraryPTE->isValid = 1;
             arbitraryPTE->pageFrameNumber = arbitraryFrame->physicalFrameNumber;
-            // Fill in fields for PTE (valid bit)
+
 
             //
             // No exception handler needed now since we have connected
