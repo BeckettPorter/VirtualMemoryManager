@@ -9,6 +9,7 @@
 
 VOID initLists();
 
+VOID initDiskSpace();
 
 
 #endif //INITIALIZE_H

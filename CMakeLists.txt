@@ -11,4 +11,6 @@ add_executable(VirtualMemoryManager vm.c
         components/initialize.c
         components/initialize.h
         components/pages.c
-        components/pages.h)
+        components/pages.h
+        components/disk.c
+        components/disk.h)

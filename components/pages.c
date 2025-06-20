@@ -4,6 +4,8 @@
 
 #include "pages.h"
 
+#include "disk.h"
+
 Frame* getFreeFrame()
 {
     // If our list is empty, return NULL because we couldn't find a free frame.
@@ -50,7 +52,6 @@ Frame* evictFrame()
         currentFrame = currentFrame->nextPFN;
     }
 
-    //
     if (previousFrame == NULL) {
         activeList = NULL;
     } else {
@@ -66,10 +67,10 @@ VOID trimPage()
 
     // unmap the old VA
     MapUserPhysicalPages(PageTableEntryToVA(victim->PTE), 1, NULL);
-    // mark PTE as invalid
-    victim->PTE->isValid = 0;
-    // Do this later when adding it to the disk
-    // victim->PTE->disk_index = something?
+
+    // Swap the victim to disk
+    swapToDisk(victim->PTE);
+
 
     // Return to the free list
     victim->nextPFN = freeList;

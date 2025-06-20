@@ -417,6 +417,7 @@ VOID full_virtual_memory_test (VOID)
 
 
     initLists();
+    initDiskSpace();
 
     for (i = 0; i < MB (1); i += 1) {
 
@@ -480,7 +481,7 @@ VOID full_virtual_memory_test (VOID)
 
             ULONG64 frameNumber = arbitraryFrame->physicalFrameNumber;
 
-            //mupp (va,size,frameNumber)
+            //mupp (va,number of pages,frameNumber)
             if (MapUserPhysicalPages (arbitrary_va, 1, &frameNumber) == FALSE) {
 
                 printf ("full_virtual_memory_test : could not map VA %p to page %llX\n", arbitrary_va,

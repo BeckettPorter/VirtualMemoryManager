@@ -11,6 +11,7 @@
 #define VIRTUAL_ADDRESS_SIZE        MB(16)
 #define VIRTUAL_ADDRESS_SIZE_IN_UNSIGNED_CHUNKS        (VIRTUAL_ADDRESS_SIZE / sizeof (ULONG_PTR))
 #define NUMBER_OF_PHYSICAL_PAGES   ((VIRTUAL_ADDRESS_SIZE / PAGE_SIZE) / 64)
+#define NUMBER_OF_VIRTUAL_PAGES (VIRTUAL_ADDRESS_SIZE / PAGE_SIZE)
 #include <windows.h>
 
 
@@ -24,7 +25,7 @@ typedef struct {
     int pageFrameNumber;
 
     // If swapped to disk, where is it, or -1 if not swapped
-    int disk_index;
+    ULONG64 disk_index;
 } PageTableEntry;
 
 
