@@ -15,7 +15,7 @@ Frame* evictFrame();
 
 Frame* findFrameFromFrameNumber(ULONG64 frameNumber);
 
-// Evicts a page and moves it from the active list to the free list.
+// Processes all pages in the modified list, writing them to disk and moving them to the standby list
 VOID modifiedPageWrite();
 
 

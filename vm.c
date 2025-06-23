@@ -475,7 +475,10 @@ VOID full_virtual_memory_test (VOID)
             if (freeList == NULL) {
                 // printf("Ran out of frames, evicting!");
 
-                modifiedPageWrite();
+                Frame* evictedFrame = evictFrame();
+                if (modifiedList != NULL) {
+                    modifiedPageWrite();
+                }
             }
 
             // Calc PTE for this VA
@@ -486,6 +489,19 @@ VOID full_virtual_memory_test (VOID)
             // In multithread, will need to check is already valid if another thread got there already
             if (arbitraryPTE->entireFormat == 0) {
                 arbitraryFrame = getFreeFrame();
+                if (arbitraryFrame == NULL) {
+                    // No free frames available, need to evict one first
+                    Frame* evictedFrame = evictFrame();
+                    if (modifiedList != NULL) {
+                        modifiedPageWrite();
+                    }
+                    // Try again after eviction
+                    arbitraryFrame = getFreeFrame();
+                    if (arbitraryFrame == NULL) {
+                        printf("Critical error: Still no free frames after eviction!\n");
+                        return;
+                    }
+                }
                 frameNumber = arbitraryFrame->physicalFrameNumber;
                 // brand new PTE, nothing to read from disk (continue as usual)
             }
@@ -503,17 +519,25 @@ VOID full_virtual_memory_test (VOID)
             else {
                 // else we are on disk
                 arbitraryFrame = getFreeFrame();
+                if (arbitraryFrame == NULL) {
+                    // Could not get a free frame, need to handle this error
+                    printf("Could not get a free frame!\n");
+                    return;
+                }
                 frameNumber = arbitraryFrame->physicalFrameNumber;
-                swapFromDisk();
+                arbitraryFrame->PTE = arbitraryPTE; // Set the PTE before calling swapFromDisk
+                swapFromDisk(arbitraryFrame);
             }
 
             //mupp (va,number of pages,frameNumber) - THIS MAKES IT VISIBLE TO USER AGAIN
             if (MapUserPhysicalPages (arbitrary_va, 1, &frameNumber) == FALSE) {
 
                 printf ("full_virtual_memory_test : could not map VA %p to page %llX\n", arbitrary_va,
-                    *physical_page_numbers);
+                    frameNumber);
 
-                return;
+                // Continue execution - don't return, just let it try to recover
+                // Skip this specific mapping but continue with other operations
+                continue;
             }
 
 
