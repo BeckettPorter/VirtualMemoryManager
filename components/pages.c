@@ -106,6 +106,13 @@ VOID modifiedPageWrite()
             break; // This shouldn't happen, but just in case
         }
 
+        // Check if victim has a valid PTE before swapping
+        if (victim->PTE == NULL) {
+            // Just add to standby if no PTE
+            standbyList = addToList(standbyList, victim);
+            continue;
+        }
+
         // Swap the victim to disk
         swapToDisk(victim->PTE);
 

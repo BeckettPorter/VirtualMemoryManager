@@ -507,14 +507,36 @@ VOID full_virtual_memory_test (VOID)
             }
             // Else, 2 possibilities, could be in transition (transition bit 1) or not
             else if (arbitraryPTE->transitionFormat.isTransitionFormat == 1) {
-                // If disk index non-zero, free it because we are using it now again.
-                // Need to
+                // Get the frame number from the PTE
                 frameNumber = arbitraryPTE->transitionFormat.pageFrameNumber;
                 arbitraryFrame = findFrameFromFrameNumber(frameNumber);
-                // NEED TO REMOVE FROM MODIFIED LIST IF WE GRAB BACK
-                // Free disk spot IF in use
 
-                // Grab back here if on standby list (and release disk spot)
+                // If we can't find the frame, get a new one
+                if (arbitraryFrame == NULL) {
+                    arbitraryFrame = getFreeFrame();
+                    if (arbitraryFrame == NULL) {
+                        // No free frames available, need to evict one
+                        evictFrame();
+                        if (modifiedList != NULL) {
+                            modifiedPageWrite();
+                        }
+                        arbitraryFrame = getFreeFrame();
+                    }
+                    frameNumber = arbitraryFrame->physicalFrameNumber;
+
+                    // Update the PTE with the new frame number
+                    arbitraryPTE->transitionFormat.pageFrameNumber = frameNumber;
+                } else {
+                    // If disk index non-zero, free it
+                    if (arbitraryPTE->transitionFormat.disk_index > 0) {
+                        freeDiskSpace[arbitraryPTE->transitionFormat.disk_index] = TRUE;
+                        arbitraryPTE->transitionFormat.disk_index = 0;
+                    }
+
+                    // Remove from modified or standby list if present
+                    modifiedList = removeFromList(modifiedList, arbitraryFrame);
+                    standbyList = removeFromList(standbyList, arbitraryFrame);
+                }
             }
             else {
                 // else we are on disk
