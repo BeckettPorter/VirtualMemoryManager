@@ -9,9 +9,11 @@
 
 unsigned char* totalDiskSpace;
 boolean* freeDiskSpace;
+void* transferVA;
 
 
 VOID swapToDisk(PageTableEntry* pageToSwap);
 
+VOID swapFromDisk();
 
 #endif //DISK_H

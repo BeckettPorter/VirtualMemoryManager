@@ -19,6 +19,8 @@ VOID initLists()
     pfnArray = malloc(count * sizeof(Frame));
     freeList = NULL;
     activeList = NULL;
+    modifiedList = NULL;
+    transitionList = NULL;
 
     for (ULONG64 i = 0; i < count; ++i) {
         pfnArray[i].physicalFrameNumber = physical_page_numbers[i];
@@ -29,6 +31,11 @@ VOID initLists()
 
 VOID initDiskSpace()
 {
+    transferVA = VirtualAlloc (NULL,
+                      PAGE_SIZE,
+                      MEM_RESERVE | MEM_PHYSICAL,
+                      PAGE_READWRITE);
+
     totalDiskSpace = malloc(VIRTUAL_ADDRESS_SIZE);
     freeDiskSpace = malloc(NUMBER_OF_VIRTUAL_PAGES * sizeof(*freeDiskSpace));
 

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <windows.h>
 
+#include "components/disk.h"
 #include "components/pages.h"
 #include "components/utilities.h"
 
@@ -477,11 +478,40 @@ VOID full_virtual_memory_test (VOID)
                 trimPage();
             }
 
-            Frame* arbitraryFrame = getFreeFrame();
 
-            ULONG64 frameNumber = arbitraryFrame->physicalFrameNumber;
 
-            //mupp (va,number of pages,frameNumber)
+
+
+            // Calc PTE for this VA
+            PageTableEntry* arbitraryPTE = VAToPageTableEntry(arbitrary_va);
+            ULONG64 frameNumber;
+            Frame* arbitraryFrame;
+
+            // In multithread, will need to check is already valid if another thread got there already
+            if (arbitraryPTE->entireFormat == 0) {
+                arbitraryFrame = getFreeFrame();
+                frameNumber = arbitraryFrame->physicalFrameNumber;
+                // brand new PTE, nothing to read from disk (continue as usual)
+            }
+            // Else, 2 possibilities, could be in transition (transition bit 1) or not
+            else if (arbitraryPTE->transitionFormat.isTransitionFormat == 1) {
+                // If disk index non-zero, free it because we are using it now again.
+                // Need to
+                frameNumber = arbitraryPTE->transitionFormat.pageFrameNumber;
+                arbitraryFrame = findFrameFromFrameNumber(frameNumber);
+                // NEED TO REMOVE FROM MODIFIED LIST IF WE GRAB BACK
+                // Free disk spot IF in use
+
+                // Grab back here if on standby list (and release disk spot)
+            }
+            else {
+                // else we are on disk
+                arbitraryFrame = getFreeFrame();
+                frameNumber = arbitraryFrame->physicalFrameNumber;
+                swapFromDisk();
+            }
+
+            //mupp (va,number of pages,frameNumber) - THIS MAKES IT VISIBLE TO USER AGAIN
             if (MapUserPhysicalPages (arbitrary_va, 1, &frameNumber) == FALSE) {
 
                 printf ("full_virtual_memory_test : could not map VA %p to page %llX\n", arbitrary_va,
@@ -490,13 +520,12 @@ VOID full_virtual_memory_test (VOID)
                 return;
             }
 
-            // Calc PTE for this VA
-            PageTableEntry* arbitraryPTE = VAToPageTableEntry(arbitrary_va);
+
             arbitraryFrame->PTE = arbitraryPTE;
 
             // Fill in fields for PTE (valid bit, page frame number)
-            arbitraryPTE->isValid = 1;
-            arbitraryPTE->pageFrameNumber = arbitraryFrame->physicalFrameNumber;
+            arbitraryPTE->validFormat.isValid = 1;
+            arbitraryPTE->validFormat.pageFrameNumber = arbitraryFrame->physicalFrameNumber;
 
 
             //
@@ -551,7 +580,7 @@ main (
     // handle them under the covers invisibly to us.
     //
 
-    malloc_test ();
+    // malloc_test ();
 
     //
     // Test a slightly more complicated implementation - where we reserve
@@ -562,7 +591,7 @@ main (
     // fault !
     //
 
-    commit_at_fault_time_test ();
+    // commit_at_fault_time_test ();
 
     //
     // Test our very complicated usermode virtual implementation.
