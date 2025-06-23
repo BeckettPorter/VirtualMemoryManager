@@ -475,12 +475,8 @@ VOID full_virtual_memory_test (VOID)
             if (freeList == NULL) {
                 // printf("Ran out of frames, evicting!");
 
-                trimPage();
+                modifiedPageWrite();
             }
-
-
-
-
 
             // Calc PTE for this VA
             PageTableEntry* arbitraryPTE = VAToPageTableEntry(arbitrary_va);

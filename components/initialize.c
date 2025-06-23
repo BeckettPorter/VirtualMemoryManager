@@ -20,7 +20,7 @@ VOID initLists()
     freeList = NULL;
     activeList = NULL;
     modifiedList = NULL;
-    transitionList = NULL;
+    standbyList = NULL;
 
     for (ULONG64 i = 0; i < count; ++i) {
         pfnArray[i].physicalFrameNumber = physical_page_numbers[i];

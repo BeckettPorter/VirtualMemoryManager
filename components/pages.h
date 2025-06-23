@@ -13,8 +13,10 @@ VOID releaseFrame();
 
 Frame* evictFrame();
 
+Frame* findFrameFromFrameNumber(ULONG64 frameNumber);
+
 // Evicts a page and moves it from the active list to the free list.
-VOID trimPage();
+VOID modifiedPageWrite();
 
 
 

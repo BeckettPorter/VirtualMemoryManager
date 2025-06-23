@@ -47,10 +47,27 @@ VOID swapToDisk(PageTableEntry* pageToSwap)
     }
 }
 
-VOID swapFromDisk()
+VOID swapFromDisk(Frame* frameToFill)
 {
     // Use same transfer VA for now, multithreaded might need a different one
+    ULONG64 frameNumber = frameToFill->physicalFrameNumber;
+
+    if (MapUserPhysicalPages (transferVA, 1, &frameNumber) == FALSE) {
+        printf ("swapFromDisk : could not map VA %p to page %llX\n", transferVA,
+            frameNumber);
+
+        return;
+    }
+
+    ULONG64 diskIndexToTransferFrom = frameToFill->PTE->transitionFormat.disk_index;
+
+    memcpy(transferVA, totalDiskSpace + diskIndexToTransferFrom * PAGE_SIZE, PAGE_SIZE);
+    // Set the disk space we just copied from to true to clear it from being used.
+    freeDiskSpace[diskIndexToTransferFrom] = true;
 
 
-    // Free disk spot at end
+    if (!MapUserPhysicalPages(transferVA, 1, NULL)) {
+        printf("swapToDisk: Failed to map user physical pages!");
+        exit(-1);
+    }
 }

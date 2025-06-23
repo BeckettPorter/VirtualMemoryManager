@@ -30,8 +30,7 @@ Frame* getFreeFrame()
 VOID releaseFrame(Frame* frame)
 {
     // Add back to free list
-    frame->nextPFN = freeList;
-    freeList = frame;
+    freeList = addToList(freeList, frame);
 
     // Now need to remove from active list
     evictFrame();
@@ -60,19 +59,11 @@ Frame* evictFrame()
         previousFrame->nextPFN = NULL;
     }
 
-    return currentFrame;
-}
 
-VOID trimPage()
-{
-    Frame* victim = evictFrame();
-    PageTableEntry* victimPTE = victim->PTE;
+    // unmap the old VA -  this will need to batch in future bc very slow
+    MapUserPhysicalPages(PageTableEntryToVA(currentFrame->PTE), 1, NULL);
 
-    // NEED TO ADD TO MODIFIED LIST
-
-    // unmap the old VA
-    MapUserPhysicalPages(PageTableEntryToVA(victim->PTE), 1, NULL);
-
+    PageTableEntry* victimPTE = currentFrame->PTE;
 
     PageTableEntry PTEContents = *victimPTE;
 
@@ -81,22 +72,32 @@ VOID trimPage()
     PTEContents.transitionFormat.mustBeZero = 0;
 
     victimPTE->entireFormat = PTEContents.entireFormat;
-    // will need another field in PTE showing is in transition (page contents in mem still good) for
-    // speedup when multithreading
-    // victimPTE->pageFrameNumber = -1;
+
+    // NEED TO ADD TO MODIFIED LIST
+    modifiedList = addToList(modifiedList, currentFrame);
+
+    return currentFrame;
+}
+
+VOID modifiedPageWrite()
+{
+    // Evict, removes from active list
+    Frame* victim = evictFrame();
+
+
+    // while modifiedList != empty, swapToDisk, add to free list
 
     // Swap the victim to disk
     swapToDisk(victim->PTE);
 
-    // Return to the free list
-    victim->nextPFN = freeList;
-    freeList = victim;
+    // Add to standby list
+    standbyList = addToList(standbyList, victim);
 }
 
 Frame* findFrameFromFrameNumber(ULONG64 frameNumber)
 {
-    ULONG64 count = physical_page_count;  // how many pages AllocateUserPhysicalPages actually returned
-
+    // how many pages AllocateUserPhysicalPages actually returned
+    ULONG64 count = physical_page_count;
 
     for (ULONG64 i = 0; i < count; ++i) {
 
