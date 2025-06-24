@@ -74,3 +74,14 @@
 30	1137	7724037996958326	CMakeFiles/VirtualMemoryManager.dir/components/disk.c.obj	51b13776e498411
 16	1138	7724037996824368	CMakeFiles/VirtualMemoryManager.dir/components/pages.c.obj	5fdfb652c185ed7a
 1138	1402	7724038008033965	VirtualMemoryManager.exe	59dd1df9b678d7dc
+31	800	7724908568560494	CMakeFiles/VirtualMemoryManager.dir/components/initialize.c.obj	2cb61ffc0dc4208f
+19	802	7724908568433674	CMakeFiles/VirtualMemoryManager.dir/components/utilities.c.obj	6f6f834dcbcb2299
+40	803	7724908568652978	CMakeFiles/VirtualMemoryManager.dir/components/pages.c.obj	5fdfb652c185ed7a
+48	820	7724908568730136	CMakeFiles/VirtualMemoryManager.dir/components/disk.c.obj	51b13776e498411
+11	829	7724908568353694	CMakeFiles/VirtualMemoryManager.dir/vm.c.obj	1de73fc02256e291
+830	1088	7724908576543354	VirtualMemoryManager.exe	59dd1df9b678d7dc
+4	583	7724909748932662	CMakeFiles/VirtualMemoryManager.dir/vm.c.obj	1de73fc02256e291
+15	629	7724909749042653	CMakeFiles/VirtualMemoryManager.dir/components/pages.c.obj	5fdfb652c185ed7a
+629	815	7724909755177685	VirtualMemoryManager.exe	59dd1df9b678d7dc
+3	553	7724911552031234	CMakeFiles/VirtualMemoryManager.dir/vm.c.obj	1de73fc02256e291
+554	771	7724911557534128	VirtualMemoryManager.exe	59dd1df9b678d7dc

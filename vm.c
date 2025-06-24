@@ -458,6 +458,8 @@ VOID full_virtual_memory_test (VOID)
 
         PULONG_PTR vaStart = vaStartLoc;
         arbitrary_va = vaStart + random_number;
+        // Calc PTE for this VA
+        PageTableEntry* arbitraryPTE = VAToPageTableEntry(arbitrary_va);
 
         __try {
 
@@ -470,16 +472,24 @@ VOID full_virtual_memory_test (VOID)
 
         if (page_faulted)
         {
-            // p = p + 1;
 
             if (freeList == NULL) {
                 // printf("Ran out of frames, evicting!");
+                Frame* victim;
 
-                modifiedPageWrite();
+                // If we can rescue, do that, otherwise evict a frame.
+                if (arbitraryPTE->transitionFormat.isTransitionFormat == 1)
+                {
+                    victim = findFrameFromFrameNumber(arbitraryPTE->transitionFormat.pageFrameNumber);
+                }
+                else
+                {
+                    victim = evictFrame();
+                }
+                modifiedPageWrite(victim);
             }
 
-            // Calc PTE for this VA
-            PageTableEntry* arbitraryPTE = VAToPageTableEntry(arbitrary_va);
+
             ULONG64 frameNumber;
             Frame* arbitraryFrame;
 

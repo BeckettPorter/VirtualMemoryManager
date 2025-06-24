@@ -79,19 +79,15 @@ Frame* evictFrame()
     return currentFrame;
 }
 
-VOID modifiedPageWrite()
+VOID modifiedPageWrite(Frame* frameToWrite)
 {
-    // Evict, removes from active list
-    Frame* victim = evictFrame();
-
-
     // while modifiedList != empty, swapToDisk, add to free list
 
     // Swap the victim to disk
-    swapToDisk(victim->PTE);
+    swapToDisk(frameToWrite->PTE);
 
     // Add to standby list
-    standbyList = addToList(standbyList, victim);
+    standbyList = addToList(standbyList, frameToWrite);
 }
 
 Frame* findFrameFromFrameNumber(ULONG64 frameNumber)
