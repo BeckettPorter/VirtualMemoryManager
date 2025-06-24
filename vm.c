@@ -458,6 +458,8 @@ VOID full_virtual_memory_test (VOID)
 
         PULONG_PTR vaStart = vaStartLoc;
         arbitrary_va = vaStart + random_number;
+        // Calc PTE for this VA
+        PageTableEntry* arbitraryPTE = VAToPageTableEntry(arbitrary_va);
 
         __try {
 
@@ -470,96 +472,58 @@ VOID full_virtual_memory_test (VOID)
 
         if (page_faulted)
         {
-            // p = p + 1;
 
             if (freeList == NULL) {
                 // printf("Ran out of frames, evicting!");
+                Frame* victim;
 
-                Frame* evictedFrame = evictFrame();
-                if (modifiedList != NULL) {
-                    modifiedPageWrite();
+                // If we can rescue, do that, otherwise evict a frame.
+                if (arbitraryPTE->transitionFormat.isTransitionFormat == 1)
+                {
+                    victim = findFrameFromFrameNumber(arbitraryPTE->transitionFormat.pageFrameNumber);
                 }
+                else
+                {
+                    victim = evictFrame();
+                }
+                modifiedPageWrite(victim);
             }
 
-            // Calc PTE for this VA
-            PageTableEntry* arbitraryPTE = VAToPageTableEntry(arbitrary_va);
+
             ULONG64 frameNumber;
             Frame* arbitraryFrame;
 
             // In multithread, will need to check is already valid if another thread got there already
             if (arbitraryPTE->entireFormat == 0) {
                 arbitraryFrame = getFreeFrame();
-                if (arbitraryFrame == NULL) {
-                    // No free frames available, need to evict one first
-                    Frame* evictedFrame = evictFrame();
-                    if (modifiedList != NULL) {
-                        modifiedPageWrite();
-                    }
-                    // Try again after eviction
-                    arbitraryFrame = getFreeFrame();
-                    if (arbitraryFrame == NULL) {
-                        printf("Critical error: Still no free frames after eviction!\n");
-                        return;
-                    }
-                }
                 frameNumber = arbitraryFrame->physicalFrameNumber;
                 // brand new PTE, nothing to read from disk (continue as usual)
             }
             // Else, 2 possibilities, could be in transition (transition bit 1) or not
             else if (arbitraryPTE->transitionFormat.isTransitionFormat == 1) {
-                // Get the frame number from the PTE
+                // If disk index non-zero, free it because we are using it now again.
+                // Need to
                 frameNumber = arbitraryPTE->transitionFormat.pageFrameNumber;
                 arbitraryFrame = findFrameFromFrameNumber(frameNumber);
+                // NEED TO REMOVE FROM MODIFIED LIST IF WE GRAB BACK
+                // Free disk spot IF in use
 
-                // If we can't find the frame, get a new one
-                if (arbitraryFrame == NULL) {
-                    arbitraryFrame = getFreeFrame();
-                    if (arbitraryFrame == NULL) {
-                        // No free frames available, need to evict one
-                        evictFrame();
-                        if (modifiedList != NULL) {
-                            modifiedPageWrite();
-                        }
-                        arbitraryFrame = getFreeFrame();
-                    }
-                    frameNumber = arbitraryFrame->physicalFrameNumber;
-
-                    // Update the PTE with the new frame number
-                    arbitraryPTE->transitionFormat.pageFrameNumber = frameNumber;
-                } else {
-                    // If disk index non-zero, free it
-                    if (arbitraryPTE->transitionFormat.disk_index > 0) {
-                        freeDiskSpace[arbitraryPTE->transitionFormat.disk_index] = TRUE;
-                        arbitraryPTE->transitionFormat.disk_index = 0;
-                    }
-
-                    // Remove from modified or standby list if present
-                    modifiedList = removeFromList(modifiedList, arbitraryFrame);
-                    standbyList = removeFromList(standbyList, arbitraryFrame);
-                }
+                // Grab back here if on standby list (and release disk spot)
             }
             else {
                 // else we are on disk
                 arbitraryFrame = getFreeFrame();
-                if (arbitraryFrame == NULL) {
-                    // Could not get a free frame, need to handle this error
-                    printf("Could not get a free frame!\n");
-                    return;
-                }
                 frameNumber = arbitraryFrame->physicalFrameNumber;
-                arbitraryFrame->PTE = arbitraryPTE; // Set the PTE before calling swapFromDisk
-                swapFromDisk(arbitraryFrame);
+                swapFromDisk();
             }
 
             //mupp (va,number of pages,frameNumber) - THIS MAKES IT VISIBLE TO USER AGAIN
             if (MapUserPhysicalPages (arbitrary_va, 1, &frameNumber) == FALSE) {
 
                 printf ("full_virtual_memory_test : could not map VA %p to page %llX\n", arbitrary_va,
-                    frameNumber);
+                    *physical_page_numbers);
 
-                // Continue execution - don't return, just let it try to recover
-                // Skip this specific mapping but continue with other operations
-                continue;
+                return;
             }
 
 

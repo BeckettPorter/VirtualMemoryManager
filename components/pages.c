@@ -38,14 +38,6 @@ VOID releaseFrame(Frame* frame)
 
 Frame* evictFrame()
 {
-    // Check if we have any frames in standby list to move to free list first
-    if (standbyList != NULL) {
-        Frame* standbyFrame = popFirstFrame(&standbyList);
-        // Add the frame to the free list
-        freeList = addToList(freeList, standbyFrame);
-        return standbyFrame;
-    }
-
     // Return NULL if we don't have any active frames to evict
     if (activeList == NULL)
     {
@@ -68,14 +60,6 @@ Frame* evictFrame()
     }
 
 
-    // Protect against NULL PTE
-    if (currentFrame->PTE == NULL) {
-        printf("evictFrame: Frame had NULL PTE\n");
-        // Put frame directly on modified list without unmapping
-        modifiedList = addToList(modifiedList, currentFrame);
-        return currentFrame;
-    }
-
     // unmap the old VA -  this will need to batch in future bc very slow
     MapUserPhysicalPages(PageTableEntryToVA(currentFrame->PTE), 1, NULL);
 
@@ -95,30 +79,15 @@ Frame* evictFrame()
     return currentFrame;
 }
 
-VOID modifiedPageWrite()
+VOID modifiedPageWrite(Frame* frameToWrite)
 {
-    // Continue processing until the modified list is empty
-    while (modifiedList != NULL) {
-        // Removes from modified list
-        Frame* victim = popFirstFrame(&modifiedList);
+    // while modifiedList != empty, swapToDisk, add to free list
 
-        if (victim == NULL) {
-            break; // This shouldn't happen, but just in case
-        }
+    // Swap the victim to disk
+    swapToDisk(frameToWrite->PTE);
 
-        // Check if victim has a valid PTE before swapping
-        if (victim->PTE == NULL) {
-            // Just add to standby if no PTE
-            standbyList = addToList(standbyList, victim);
-            continue;
-        }
-
-        // Swap the victim to disk
-        swapToDisk(victim->PTE);
-
-        // Add to standby list
-        standbyList = addToList(standbyList, victim);
-    }
+    // Add to standby list
+    standbyList = addToList(standbyList, frameToWrite);
 }
 
 Frame* findFrameFromFrameNumber(ULONG64 frameNumber)

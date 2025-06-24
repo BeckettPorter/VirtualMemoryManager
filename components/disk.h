@@ -14,6 +14,6 @@ void* transferVA;
 
 VOID swapToDisk(PageTableEntry* pageToSwap);
 
-VOID swapFromDisk(Frame* frameToFill);
+VOID swapFromDisk();
 
 #endif //DISK_H

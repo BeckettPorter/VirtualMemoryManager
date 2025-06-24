@@ -10,18 +10,13 @@
 
 VOID swapToDisk(PageTableEntry* pageToSwap)
 {
-    if (pageToSwap == NULL) {
-        printf("swapToDisk: NULL pageToSwap passed\n");
-        return;
-    }
-
     ULONG64 frameNumber = pageToSwap->transitionFormat.pageFrameNumber;
 
     if (MapUserPhysicalPages (transferVA, 1, &frameNumber) == FALSE) {
         printf ("swapToDisk : could not map VA %p to page %llX\n", transferVA,
             frameNumber);
 
-        // Don't return - try to continue with the operation
+        return;
     }
 
     ULONG64 freeDiskSlot = 0;
@@ -54,11 +49,6 @@ VOID swapToDisk(PageTableEntry* pageToSwap)
 
 VOID swapFromDisk(Frame* frameToFill)
 {
-    if (frameToFill == NULL || frameToFill->PTE == NULL) {
-        printf("swapFromDisk: NULL frameToFill or PTE passed\n");
-        return;
-    }
-
     // Use same transfer VA for now, multithreaded might need a different one
     ULONG64 frameNumber = frameToFill->physicalFrameNumber;
 
@@ -66,7 +56,7 @@ VOID swapFromDisk(Frame* frameToFill)
         printf ("swapFromDisk : could not map VA %p to page %llX\n", transferVA,
             frameNumber);
 
-        // Continue execution rather than returning
+        return;
     }
 
     ULONG64 diskIndexToTransferFrom = frameToFill->PTE->transitionFormat.disk_index;

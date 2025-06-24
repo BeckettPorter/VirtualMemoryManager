@@ -25,7 +25,6 @@ VOID initLists()
     for (ULONG64 i = 0; i < count; ++i) {
         pfnArray[i].physicalFrameNumber = physical_page_numbers[i];
         pfnArray[i].nextPFN = freeList;
-        pfnArray[i].PTE = NULL; // Initialize PTE pointer
         freeList = &pfnArray[i];
     }
 }
