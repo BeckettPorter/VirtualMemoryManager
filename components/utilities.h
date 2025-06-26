@@ -36,7 +36,7 @@ typedef struct {
     ULONG64 isTransitionFormat: 1;
 
     // If swapped to disk, where is it, or -1 if not swapped
-    ULONG64 disk_index: 40;
+    ULONG64 disk_index: 12;
 } invalidPTE;
 
 typedef struct {
@@ -65,6 +65,8 @@ typedef struct Frame
     ULONG64 physicalFrameNumber;
     struct Frame* nextPFN;
     PageTableEntry* PTE;
+    // If this is 1, we are on the modified list, otherwise on the standby list.
+    ULONG64 isOnModifiedList: 1;
 } Frame;
 
 

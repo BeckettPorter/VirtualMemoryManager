@@ -7,10 +7,17 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "pages.h"
 
+// In future, can add number of pages to swap here and pass array
 VOID swapToDisk(PageTableEntry* pageToSwap)
 {
     ULONG64 frameNumber = pageToSwap->transitionFormat.pageFrameNumber;
+
+    Frame* frameToRemove = findFrameFromFrameNumber(frameNumber);
+
+    modifiedList = removeFromList(modifiedList, frameToRemove);
+    frameToRemove->isOnModifiedList = 0;
 
     if (MapUserPhysicalPages (transferVA, 1, &frameNumber) == FALSE) {
         printf ("swapToDisk : could not map VA %p to page %llX\n", transferVA,
@@ -67,7 +74,7 @@ VOID swapFromDisk(Frame* frameToFill)
 
 
     if (!MapUserPhysicalPages(transferVA, 1, NULL)) {
-        printf("swapToDisk: Failed to map user physical pages!");
+        printf("swapFromDisk: Failed to map user physical pages!");
         exit(-1);
     }
 }

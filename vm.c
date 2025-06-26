@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
@@ -459,7 +460,9 @@ VOID full_virtual_memory_test (VOID)
         PULONG_PTR vaStart = vaStartLoc;
         arbitrary_va = vaStart + random_number;
         // Calc PTE for this VA
-        PageTableEntry* arbitraryPTE = VAToPageTableEntry(arbitrary_va);
+        PageTableEntry* currentPTE = VAToPageTableEntry(arbitrary_va);
+        ULONG64 frameNumber;
+        Frame* arbitraryFrame;
 
         __try {
 
@@ -472,68 +475,70 @@ VOID full_virtual_memory_test (VOID)
 
         if (page_faulted)
         {
+            // Else, 2 possibilities, could be in transition (transition bit 1) or not
+            if (currentPTE->transitionFormat.isTransitionFormat == 1)
+            {
+                // If disk index non-zero, free it because we are using it now again.
 
-            if (freeList == NULL) {
-                // printf("Ran out of frames, evicting!");
-                Frame* victim;
-
-                // If we can rescue, do that, otherwise evict a frame.
-                if (arbitraryPTE->transitionFormat.isTransitionFormat == 1)
+                frameNumber = currentPTE->transitionFormat.pageFrameNumber;
+                arbitraryFrame = findFrameFromFrameNumber(frameNumber);
+                // NEED TO REMOVE FROM MODIFIED LIST IF WE GRAB BACK
+                if (arbitraryFrame->isOnModifiedList == 1)
                 {
-                    victim = findFrameFromFrameNumber(arbitraryPTE->transitionFormat.pageFrameNumber);
+                    modifiedList = removeFromList(modifiedList, arbitraryFrame);
                 }
                 else
                 {
-                    victim = evictFrame();
+                    standbyList = removeFromList(standbyList, arbitraryFrame);
+                    freeDiskSpace[currentPTE->transitionFormat.disk_index] = true;
                 }
-                modifiedPageWrite(victim);
             }
-            // is this working??
-
-
-            ULONG64 frameNumber;
-            Frame* arbitraryFrame;
-
-            // In multithread, will need to check is already valid if another thread got there already
-            if (arbitraryPTE->entireFormat == 0) {
+            else
+                // Else if we don't rescue
+            {
                 arbitraryFrame = getFreeFrame();
-                frameNumber = arbitraryFrame->physicalFrameNumber;
-                // brand new PTE, nothing to read from disk (continue as usual)
-            }
-            // Else, 2 possibilities, could be in transition (transition bit 1) or not
-            else if (arbitraryPTE->transitionFormat.isTransitionFormat == 1) {
-                // If disk index non-zero, free it because we are using it now again.
-                // Need to
-                frameNumber = arbitraryPTE->transitionFormat.pageFrameNumber;
-                arbitraryFrame = findFrameFromFrameNumber(frameNumber);
-                // NEED TO REMOVE FROM MODIFIED LIST IF WE GRAB BACK
-                // Free disk spot IF in use
 
-                // Grab back here if on standby list (and release disk spot)
-            }
-            else {
-                // else we are on disk
-                arbitraryFrame = getFreeFrame();
+                if (arbitraryFrame == NULL) {
+                    // printf("Ran out of frames, evicting!");
+
+                    Frame *victim = evictFrame();
+
+                    modifiedPageWrite(victim);
+
+                    arbitraryFrame = victim;
+                }
+
                 frameNumber = arbitraryFrame->physicalFrameNumber;
-                swapFromDisk();
+
+                // Now we have a page. Now we decide to swap from disk or not.
+                if (currentPTE->entireFormat == 0)
+                {
+                    // brand new PTE, nothing to read from disk (continue as usual)
+                }
+                else
+                {
+                    // else we are on disk
+                    swapFromDisk(arbitraryFrame);
+                }
             }
 
             //mupp (va,number of pages,frameNumber) - THIS MAKES IT VISIBLE TO USER AGAIN
             if (MapUserPhysicalPages (arbitrary_va, 1, &frameNumber) == FALSE) {
 
                 printf ("full_virtual_memory_test : could not map VA %p to page %llX\n", arbitrary_va,
-                    *physical_page_numbers);
+                    frameNumber);
 
                 return;
             }
 
-
-            arbitraryFrame->PTE = arbitraryPTE;
-
             // Fill in fields for PTE (valid bit, page frame number)
-            arbitraryPTE->validFormat.isValid = 1;
-            arbitraryPTE->validFormat.pageFrameNumber = arbitraryFrame->physicalFrameNumber;
+            currentPTE->validFormat.isValid = 1;
+            currentPTE->validFormat.pageFrameNumber = arbitraryFrame->physicalFrameNumber;
 
+            arbitraryFrame->PTE = currentPTE;
+
+            // Add to active list
+            activeList = addToList(activeList, arbitraryFrame);
 
             //
             // No exception handler needed now since we have connected

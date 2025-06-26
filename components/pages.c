@@ -5,6 +5,7 @@
 #include "pages.h"
 
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "disk.h"
 
@@ -19,10 +20,6 @@ Frame* getFreeFrame()
     // Get first frame from free list and set head to next one.
     Frame* frame = freeList;
     popFirstFrame(&freeList);
-
-
-    // Add to active list
-    activeList = addToList(activeList, frame);
 
     return frame;
 }
@@ -61,20 +58,31 @@ Frame* evictFrame()
 
 
     // unmap the old VA -  this will need to batch in future bc very slow
-    MapUserPhysicalPages(PageTableEntryToVA(currentFrame->PTE), 1, NULL);
+    if (MapUserPhysicalPages (PageTableEntryToVA(currentFrame->PTE), 1, NULL) == FALSE) {
+
+        printf ("evictFrame : could not unmap VA %p to page %llX\n", PageTableEntryToVA(currentFrame->PTE),
+            *physical_page_numbers);
+
+        return -1;
+    }
 
     PageTableEntry* victimPTE = currentFrame->PTE;
 
     PageTableEntry PTEContents = *victimPTE;
 
+    PTEContents.entireFormat = 0;
     PTEContents.transitionFormat.isTransitionFormat = 1;
     PTEContents.transitionFormat.disk_index = 0;
     PTEContents.transitionFormat.mustBeZero = 0;
+    PTEContents.transitionFormat.pageFrameNumber = currentFrame->physicalFrameNumber;
 
     victimPTE->entireFormat = PTEContents.entireFormat;
 
     // NEED TO ADD TO MODIFIED LIST
     modifiedList = addToList(modifiedList, currentFrame);
+
+    // Set to be on modified list in frame.
+    currentFrame->isOnModifiedList = 1;
 
     return currentFrame;
 }
@@ -85,6 +93,7 @@ VOID modifiedPageWrite(Frame* frameToWrite)
 
     // Swap the victim to disk
     swapToDisk(frameToWrite->PTE);
+
 
     // Add to standby list
     standbyList = addToList(standbyList, frameToWrite);

@@ -26,6 +26,8 @@ VOID initLists()
         pfnArray[i].physicalFrameNumber = physical_page_numbers[i];
         pfnArray[i].nextPFN = freeList;
         freeList = &pfnArray[i];
+        pfnArray[i].PTE = NULL;
+        pfnArray[i].isOnModifiedList = 0;
     }
 }
 
