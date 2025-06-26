@@ -61,7 +61,7 @@ Frame* evictFrame()
     if (MapUserPhysicalPages (PageTableEntryToVA(currentFrame->PTE), 1, NULL) == FALSE) {
 
         printf ("evictFrame : could not unmap VA %p to page %llX\n", PageTableEntryToVA(currentFrame->PTE),
-            *physical_page_numbers);
+            currentFrame->physicalFrameNumber);
 
         return -1;
     }

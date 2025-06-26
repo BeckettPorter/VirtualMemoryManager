@@ -12,8 +12,11 @@ VOID initLists()
 {
     ULONG64 count = physical_page_count;  // how many pages AllocateUserPhysicalPages actually returned
 
-    pageTable = malloc(VIRTUAL_ADDRESS_SIZE / PAGE_SIZE * sizeof(PageTableEntry));
-    memset(pageTable, 0, VIRTUAL_ADDRESS_SIZE / PAGE_SIZE * sizeof(PageTableEntry));
+
+    ULONG64 numBytes = VIRTUAL_ADDRESS_SIZE / PAGE_SIZE * sizeof(PageTableEntry);
+
+    pageTable = malloc(numBytes);
+    memset(pageTable, 0, numBytes);
 
     // build PFN list only from actually owned pages
     pfnArray = malloc(count * sizeof(Frame));
