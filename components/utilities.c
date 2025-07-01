@@ -89,7 +89,7 @@ boolean wipePage(ULONG64 frameNumber)
 {
     if (MapUserPhysicalPages (transferVA, 1, &frameNumber) == FALSE) {
 
-        printf ("wipePage : could not map transferVA %p to frame num address %llX\n", transferVA,
+        printf ("wipePage : could not map transferVA %p to frame num %llX\n", transferVA,
             frameNumber);
 
         DebugBreak();
@@ -100,7 +100,7 @@ boolean wipePage(ULONG64 frameNumber)
 
     if (MapUserPhysicalPages (transferVA, 1, NULL) == FALSE) {
 
-        printf ("wipePage : could not unmap transferVA %p to page address %llX\n", transferVA,
+        printf ("wipePage : could not unmap transferVA %p from frame num %llX\n", transferVA,
             frameNumber);
 
         return false;
