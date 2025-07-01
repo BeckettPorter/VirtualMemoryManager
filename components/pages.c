@@ -84,10 +84,6 @@ VOID modifiedPageWrite(Frame* frameToWrite)
 
     // Swap the victim to disk
     swapToDisk(frameToWrite->PTE);
-
-
-    // Add to standby list
-    standbyList = addToList(standbyList, frameToWrite);
 }
 
 Frame* findFrameFromFrameNumber(ULONG64 frameNumber)

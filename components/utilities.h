@@ -29,8 +29,6 @@ typedef struct {
 } validPTE;
 
 typedef struct {
-    // Can change to uint8_t later maybe to save space, fine for now tho.
-    // Also, if it is true, this is a valid PTE. If false, means it isn't or was swapped to disk.
     ULONG64 mustBeZero: 1;
 
     ULONG64 isTransitionFormat: 1;
@@ -46,6 +44,7 @@ typedef struct {
 
     ULONG64 pageFrameNumber: 40;
 
+    // TODO bp: get rid of disk_index here in the future because its limiting space I can use
     ULONG64 disk_index: 12;
 } transitionPTE;
 
@@ -67,6 +66,7 @@ typedef struct Frame
     PageTableEntry* PTE;
     // If this is 1, we are on the modified list, otherwise on the standby list.
     ULONG64 isOnModifiedList: 1;
+    // TODO bp: add disk index here in the future.
 } Frame;
 
 

@@ -525,6 +525,19 @@ VOID full_virtual_memory_test (VOID)
                             return;
                         }
                     }
+
+                    PageTableEntry *victimPTE = currentFrame->PTE;
+
+                    // Victim PTE is in transition format, need to turn to invalid disk format
+                    PageTableEntry pteContents;
+
+                    pteContents.entireFormat = 0;
+                    pteContents.invalidFormat.mustBeZero = 0;
+                    pteContents.invalidFormat.isTransitionFormat = 0;
+                    pteContents.invalidFormat.disk_index = victimPTE->transitionFormat.disk_index;
+
+                    *victimPTE = pteContents;
+
                 }
 
                 frameNumber = currentFrame->physicalFrameNumber;
@@ -537,7 +550,7 @@ VOID full_virtual_memory_test (VOID)
                 else
                 {
                     // else we are on disk
-                    swapFromDisk(currentFrame);
+                    swapFromDisk(currentFrame, currentPTE->invalidFormat.disk_index);
                 }
             }
 

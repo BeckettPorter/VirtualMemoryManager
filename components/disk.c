@@ -37,7 +37,7 @@ VOID swapToDisk(PageTableEntry* pageToSwap)
     if (freeDiskSlot == NUMBER_OF_VIRTUAL_PAGES)
     {
         printf("swapToDisk: No free disk slots!");
-        exit(-1);
+        // exit(-1);
     }
 
     memcpy(totalDiskSpace + freeDiskSlot * PAGE_SIZE, transferVA, PAGE_SIZE);
@@ -55,7 +55,7 @@ VOID swapToDisk(PageTableEntry* pageToSwap)
     }
 }
 
-VOID swapFromDisk(Frame* frameToFill)
+VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom)
 {
     // Use same transfer VA for now, multithreaded might need a different one
     ULONG64 frameNumber = frameToFill->physicalFrameNumber;
@@ -67,7 +67,12 @@ VOID swapFromDisk(Frame* frameToFill)
         return;
     }
 
-    ULONG64 diskIndexToTransferFrom = frameToFill->PTE->transitionFormat.disk_index;
+    // If the slot in disk space we are trying to fill from is not already in use, debug break
+    // because the contents should be there.
+    if (freeDiskSpace[diskIndexToTransferFrom] == true)
+    {
+        DebugBreak();
+    }
 
     memcpy(transferVA, totalDiskSpace + diskIndexToTransferFrom * PAGE_SIZE, PAGE_SIZE);
     // Set the disk space we just copied from to true to clear it from being used.
