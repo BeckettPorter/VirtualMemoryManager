@@ -17,17 +17,17 @@ events:
       - "CMakeLists.txt:2 (project)"
     message: |
       Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
-      Compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe 
+      Compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe 
       Build flags: 
       Id flags:  
       
       The output was:
       0
-      Microsoft (R) C/C++ Optimizing Compiler Version 19.42.34435 for x64
+      Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35211 for x64
       Copyright (C) Microsoft Corporation.  All rights reserved.
       
       CMakeCCompilerId.c
-      Microsoft (R) Incremental Linker Version 14.42.34435.0
+      Microsoft (R) Incremental Linker Version 14.44.35211.0
       Copyright (C) Microsoft Corporation.  All rights reserved.
       
       /out:CMakeCCompilerId.exe 
@@ -63,8 +63,8 @@ events:
     checks:
       - "Detecting C compiler ABI info"
     directories:
-      source: "C:/Users/porte/CLionProjects/VirtualMemoryManager/cmake-build-wdebug-visual-studio/CMakeFiles/CMakeScratch/TryCompile-t8h5pe"
-      binary: "C:/Users/porte/CLionProjects/VirtualMemoryManager/cmake-build-wdebug-visual-studio/CMakeFiles/CMakeScratch/TryCompile-t8h5pe"
+      source: "C:/Users/porte/CLionProjects/VirtualMemoryManager/cmake-build-wdebug-visual-studio/CMakeFiles/CMakeScratch/TryCompile-1afql4"
+      binary: "C:/Users/porte/CLionProjects/VirtualMemoryManager/cmake-build-wdebug-visual-studio/CMakeFiles/CMakeScratch/TryCompile-1afql4"
     cmakeVariables:
       CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
       CMAKE_C_FLAGS_DEBUG: "/Ob0 /Od /RTC1"
@@ -73,11 +73,11 @@ events:
       variable: "CMAKE_C_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: 'C:/Users/porte/CLionProjects/VirtualMemoryManager/cmake-build-wdebug-visual-studio/CMakeFiles/CMakeScratch/TryCompile-t8h5pe'
+        Change Dir: 'C:/Users/porte/CLionProjects/VirtualMemoryManager/cmake-build-wdebug-visual-studio/CMakeFiles/CMakeScratch/TryCompile-1afql4'
         
-        Run Build Command(s): C:/Users/porte/AppData/Local/Programs/CLion/bin/ninja/win/x64/ninja.exe -v cmTC_2414a
-        [1/2] C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1442~1.344\\bin\\Hostx64\\x64\\cl.exe  /nologo   /DWIN32 /D_WINDOWS  /Ob0 /Od /RTC1 -MDd -Zi /showIncludes /FoCMakeFiles\\cmTC_2414a.dir\\CMakeCCompilerABI.c.obj /FdCMakeFiles\\cmTC_2414a.dir\\ /FS -c C:\\Users\\porte\\AppData\\Local\\Programs\\CLion\\bin\\cmake\\win\\x64\\share\\cmake-3.31\\Modules\\CMakeCCompilerABI.c
-        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && C:\\Users\\porte\\AppData\\Local\\Programs\\CLion\\bin\\cmake\\win\\x64\\bin\\cmake.exe -E vs_link_exe --msvc-ver=1942 --intdir=CMakeFiles\\cmTC_2414a.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1442~1.344\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_2414a.dir\\CMakeCCompilerABI.c.obj  /out:cmTC_2414a.exe /implib:cmTC_2414a.lib /pdb:cmTC_2414a.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        Run Build Command(s): C:/Users/porte/AppData/Local/Programs/CLion/bin/ninja/win/x64/ninja.exe -v cmTC_46156
+        [1/2] C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1444~1.352\\bin\\Hostx64\\x64\\cl.exe  /nologo   /DWIN32 /D_WINDOWS  /Ob0 /Od /RTC1 -MDd -Zi /showIncludes /FoCMakeFiles\\cmTC_46156.dir\\CMakeCCompilerABI.c.obj /FdCMakeFiles\\cmTC_46156.dir\\ /FS -c C:\\Users\\porte\\AppData\\Local\\Programs\\CLion\\bin\\cmake\\win\\x64\\share\\cmake-3.31\\Modules\\CMakeCCompilerABI.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && C:\\Users\\porte\\AppData\\Local\\Programs\\CLion\\bin\\cmake\\win\\x64\\bin\\cmake.exe -E vs_link_exe --msvc-ver=1944 --intdir=CMakeFiles\\cmTC_46156.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests  -- C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1444~1.352\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_46156.dir\\CMakeCCompilerABI.c.obj  /out:cmTC_46156.exe /implib:cmTC_46156.lib /pdb:cmTC_46156.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
         
       exitCode: 0
   -
@@ -90,7 +90,7 @@ events:
       Parsed C implicit link information:
         link line regex: [^( *|.*[/\\])(ld[0-9]*(\\.[a-z]+)?|link\\.exe|lld-link(\\.exe)?|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
         linker tool regex: [^[ 	]*(->|")?[ 	]*(([^"]*[/\\])?(ld[0-9]*(\\.[a-z]+)?|link\\.exe|lld-link(\\.exe)?))("|,| |$)]
-        linker tool for 'C': C:/PROGRA~1/MICROS~4/2022/COMMUN~1/VC/Tools/MSVC/1442~1.344/bin/Hostx64/x64/link.exe
+        linker tool for 'C': C:/PROGRA~1/MICROS~4/2022/COMMUN~1/VC/Tools/MSVC/1444~1.352/bin/Hostx64/x64/link.exe
         implicit libs: []
         implicit objs: []
         implicit dirs: []
@@ -105,7 +105,7 @@ events:
       - "C:/Users/porte/AppData/Local/Programs/CLion/bin/cmake/win/x64/share/cmake-3.31/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
       - "CMakeLists.txt:2 (project)"
     message: |
-      Running the C compiler's linker: "C:/PROGRA~1/MICROS~4/2022/COMMUN~1/VC/Tools/MSVC/1442~1.344/bin/Hostx64/x64/link.exe" "-v"
-      Microsoft (R) Incremental Linker Version 14.42.34435.0
+      Running the C compiler's linker: "C:/PROGRA~1/MICROS~4/2022/COMMUN~1/VC/Tools/MSVC/1444~1.352/bin/Hostx64/x64/link.exe" "-v"
+      Microsoft (R) Incremental Linker Version 14.44.35211.0
       Copyright (C) Microsoft Corporation.  All rights reserved.
 ...

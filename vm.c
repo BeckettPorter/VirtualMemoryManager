@@ -462,7 +462,7 @@ VOID full_virtual_memory_test (VOID)
         // Calc PTE for this VA
         PageTableEntry* currentPTE = VAToPageTableEntry(arbitrary_va);
         ULONG64 frameNumber;
-        Frame* arbitraryFrame;
+        volatile Frame* currentFrame;
 
         __try {
 
@@ -478,37 +478,56 @@ VOID full_virtual_memory_test (VOID)
             // Else, 2 possibilities, could be in transition (transition bit 1) or not
             if (currentPTE->transitionFormat.isTransitionFormat == 1)
             {
-                // If disk index non-zero, free it because we are using it now again.
-
                 frameNumber = currentPTE->transitionFormat.pageFrameNumber;
-                arbitraryFrame = findFrameFromFrameNumber(frameNumber);
+                currentFrame = findFrameFromFrameNumber(frameNumber);
+
+                evictFrame(currentFrame);
+
                 // NEED TO REMOVE FROM MODIFIED LIST IF WE GRAB BACK
-                if (arbitraryFrame->isOnModifiedList == 1)
+                if (currentFrame->isOnModifiedList == 1)
                 {
-                    modifiedList = removeFromList(modifiedList, arbitraryFrame);
+                    modifiedList = removeFromList(modifiedList, currentFrame);
                 }
                 else
                 {
-                    standbyList = removeFromList(standbyList, arbitraryFrame);
+                    standbyList = removeFromList(standbyList, currentFrame);
                     freeDiskSpace[currentPTE->transitionFormat.disk_index] = true;
                 }
             }
             else
                 // Else if we don't rescue
             {
-                arbitraryFrame = getFreeFrame();
+                currentFrame = getFreeFrame();
 
-                if (arbitraryFrame == NULL) {
-                    // printf("Ran out of frames, evicting!");
+                if (currentFrame == NULL) {
 
-                    Frame *victim = evictFrame();
+                    if (standbyList != NULL)
+                    {
+                        currentFrame = popFirstFrame(&standbyList);
+                        if (wipePage(currentFrame->physicalFrameNumber) == false)
+                        {
+                            printf("wipePage failed in full_virtual_memory_test\n");
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        // If we can't get any from standby list
+                        Frame *victim = evictFrame();
 
-                    modifiedPageWrite(victim);
+                        modifiedPageWrite(victim);
 
-                    arbitraryFrame = victim;
+                        currentFrame = victim;
+
+                        if (wipePage(currentFrame->physicalFrameNumber) == false)
+                        {
+                            printf("wipePage failed in full_virtual_memory_test\n");
+                            return;
+                        }
+                    }
                 }
 
-                frameNumber = arbitraryFrame->physicalFrameNumber;
+                frameNumber = currentFrame->physicalFrameNumber;
 
                 // Now we have a page. Now we decide to swap from disk or not.
                 if (currentPTE->entireFormat == 0)
@@ -518,7 +537,7 @@ VOID full_virtual_memory_test (VOID)
                 else
                 {
                     // else we are on disk
-                    swapFromDisk(arbitraryFrame);
+                    swapFromDisk(currentFrame);
                 }
             }
 
@@ -530,15 +549,17 @@ VOID full_virtual_memory_test (VOID)
 
                 return;
             }
+            checkVa(arbitrary_va);
+
 
             // Fill in fields for PTE (valid bit, page frame number)
             currentPTE->validFormat.isValid = 1;
-            currentPTE->validFormat.pageFrameNumber = arbitraryFrame->physicalFrameNumber;
+            currentPTE->validFormat.pageFrameNumber = currentFrame->physicalFrameNumber;
 
-            arbitraryFrame->PTE = currentPTE;
+            currentFrame->PTE = currentPTE;
 
             // Add to active list
-            activeList = addToList(activeList, arbitraryFrame);
+            activeList = addToList(activeList, currentFrame);
 
             //
             // No exception handler needed now since we have connected

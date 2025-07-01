@@ -91,4 +91,8 @@ Frame* addToList(Frame* head, Frame* item);
 Frame* removeFromList(Frame* head, Frame* item);
 Frame* popFirstFrame(Frame** headPtr);
 
+VOID checkVa(PULONG64 va);
+
+boolean wipePage(ULONG64 frameNumber);
+
 #endif //UTILITIES_H

@@ -4,7 +4,11 @@
 
 #include "utilities.h"
 
+#include <stdbool.h>
+#include <stdio.h>
 #include <windows.h>
+
+#include "disk.h"
 
 
 PageTableEntry* VAToPageTableEntry(void* virtualAddress)
@@ -68,4 +72,39 @@ Frame* popFirstFrame(Frame** headPtr) {
     *headPtr = first->nextPFN;
     first->nextPFN = NULL;
     return first;
+}
+
+VOID
+checkVa(PULONG64 va) {
+    va = (PULONG64) ((ULONG64)va & ~(PAGE_SIZE - 1));
+    for (int i = 0; i < PAGE_SIZE / 8; ++i) {
+        if (!(*va == 0 || *va == (ULONG64) va)) {
+            DebugBreak();
+        }
+        va += 1;
+    }
+}
+
+boolean wipePage(ULONG64 frameNumber)
+{
+    if (MapUserPhysicalPages (transferVA, 1, &frameNumber) == FALSE) {
+
+        printf ("wipePage : could not map transferVA %p to frame num address %llX\n", transferVA,
+            frameNumber);
+
+        DebugBreak();
+        return false;
+    }
+
+    memset(transferVA, 0, PAGE_SIZE);
+
+    if (MapUserPhysicalPages (transferVA, 1, NULL) == FALSE) {
+
+        printf ("wipePage : could not unmap transferVA %p to page address %llX\n", transferVA,
+            frameNumber);
+
+        return false;
+    }
+
+    return true;
 }

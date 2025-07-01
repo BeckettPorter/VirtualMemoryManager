@@ -24,15 +24,6 @@ Frame* getFreeFrame()
     return frame;
 }
 
-VOID releaseFrame(Frame* frame)
-{
-    // Add back to free list
-    freeList = addToList(freeList, frame);
-
-    // Now need to remove from active list
-    evictFrame();
-}
-
 Frame* evictFrame()
 {
     // Return NULL if we don't have any active frames to evict
@@ -63,7 +54,7 @@ Frame* evictFrame()
         printf ("evictFrame : could not unmap VA %p to page %llX\n", PageTableEntryToVA(currentFrame->PTE),
             currentFrame->physicalFrameNumber);
 
-        return -1;
+        DebugBreak();
     }
 
     PageTableEntry* victimPTE = currentFrame->PTE;

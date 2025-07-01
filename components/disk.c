@@ -46,6 +46,7 @@ VOID swapToDisk(PageTableEntry* pageToSwap)
 
 
     pageToSwap->transitionFormat.disk_index = freeDiskSlot;
+    pageToSwap->transitionFormat.isTransitionFormat = 0;
 
 
     if (!MapUserPhysicalPages(transferVA, 1, NULL)) {
