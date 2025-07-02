@@ -33,8 +33,9 @@ typedef struct {
 
     ULONG64 isTransitionFormat: 1;
 
+    ULONG64 diskIndex: 40;
     // If swapped to disk, where is it, or -1 if not swapped
-    ULONG64 disk_index: 12;
+    // ULONG64 disk_index: 12;
 } invalidPTE;
 
 typedef struct {
@@ -45,7 +46,7 @@ typedef struct {
     ULONG64 pageFrameNumber: 40;
 
     // TODO bp: get rid of disk_index here in the future because its limiting space I can use
-    ULONG64 disk_index: 12;
+    // ULONG64 disk_index: 12;
 } transitionPTE;
 
 // PTE Union
@@ -67,6 +68,7 @@ typedef struct Frame
     // If this is 1, we are on the modified list, otherwise on the standby list.
     ULONG64 isOnModifiedList: 1;
     // TODO bp: add disk index here in the future.
+    ULONG64 diskIndex: 40;
 } Frame;
 
 

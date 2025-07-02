@@ -491,7 +491,10 @@ VOID full_virtual_memory_test (VOID)
                 else
                 {
                     standbyList = removeFromList(standbyList, currentFrame);
-                    freeDiskSpace[currentPTE->transitionFormat.disk_index] = true;
+
+                    ULONG64 diskIndex = findFrameFromFrameNumber(currentFrame)->diskIndex;
+
+                    freeDiskSpace[diskIndex] = true;
                 }
             }
             else
@@ -534,7 +537,10 @@ VOID full_virtual_memory_test (VOID)
                     pteContents.entireFormat = 0;
                     pteContents.invalidFormat.mustBeZero = 0;
                     pteContents.invalidFormat.isTransitionFormat = 0;
-                    pteContents.invalidFormat.disk_index = victimPTE->transitionFormat.disk_index;
+
+                    // // #TODO bp, this is probably going to mess it up but I am commenting it out for now
+                    pteContents.invalidFormat.diskIndex =
+                        findFrameFromFrameNumber(victimPTE->transitionFormat.pageFrameNumber)->diskIndex;
 
                     *victimPTE = pteContents;
 
@@ -550,7 +556,9 @@ VOID full_virtual_memory_test (VOID)
                 else
                 {
                     // else we are on disk
-                    swapFromDisk(currentFrame, currentPTE->invalidFormat.disk_index);
+                    ULONG64 diskIndex = currentPTE->invalidFormat.diskIndex;
+
+                    swapFromDisk(currentFrame, diskIndex);
                 }
             }
 

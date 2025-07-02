@@ -63,9 +63,10 @@ Frame* evictFrame()
 
     PTEContents.entireFormat = 0;
     PTEContents.transitionFormat.isTransitionFormat = 1;
-    PTEContents.transitionFormat.disk_index = 0;
     PTEContents.transitionFormat.mustBeZero = 0;
     PTEContents.transitionFormat.pageFrameNumber = currentFrame->physicalFrameNumber;
+
+    findFrameFromFrameNumber(PTEContents.transitionFormat.pageFrameNumber)->diskIndex = 0;
 
     victimPTE->entireFormat = PTEContents.entireFormat;
 
@@ -97,6 +98,7 @@ Frame* findFrameFromFrameNumber(ULONG64 frameNumber)
             return &pfnArray[i];
         }
     }
+    DebugBreak();
     exit(-1);
     // write fatal print here
 }
