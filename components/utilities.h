@@ -8,7 +8,6 @@
 
 #define PAGE_SIZE                   4096
 #define MB(x)                       ((x) * 1024 * 1024)
-// MUST NOT BE MORE THAN 16 mb because transitionPTE disk index size.
 #define VIRTUAL_ADDRESS_SIZE        MB(16)
 #define VIRTUAL_ADDRESS_SIZE_IN_UNSIGNED_CHUNKS        (VIRTUAL_ADDRESS_SIZE / sizeof (ULONG_PTR))
 #define NUMBER_OF_PHYSICAL_PAGES   ((VIRTUAL_ADDRESS_SIZE / PAGE_SIZE) / 64)
@@ -18,13 +17,10 @@
 
 // Structs
 typedef struct {
-    // Can change to uint8_t later maybe to save space, fine for now tho.
-    // Also, if it is true, this is a valid PTE. If false, means it isn't or was swapped to disk.
     ULONG64 isValid: 1;
 
     ULONG64 isTransitionFormat: 1;
 
-    // Physical frame number, or -1 if not mapped
     ULONG64 pageFrameNumber: 40;
 } validPTE;
 
@@ -34,8 +30,6 @@ typedef struct {
     ULONG64 isTransitionFormat: 1;
 
     ULONG64 diskIndex: 40;
-    // If swapped to disk, where is it, or -1 if not swapped
-    // ULONG64 disk_index: 12;
 } invalidPTE;
 
 typedef struct {
@@ -44,9 +38,6 @@ typedef struct {
     ULONG64 isTransitionFormat: 1;
 
     ULONG64 pageFrameNumber: 40;
-
-    // TODO bp: get rid of disk_index here in the future because its limiting space I can use
-    // ULONG64 disk_index: 12;
 } transitionPTE;
 
 // PTE Union
@@ -67,7 +58,6 @@ typedef struct Frame
     PageTableEntry* PTE;
     // If this is 1, we are on the modified list, otherwise on the standby list.
     ULONG64 isOnModifiedList: 1;
-    // TODO bp: add disk index here in the future.
     ULONG64 diskIndex: 40;
 } Frame;
 

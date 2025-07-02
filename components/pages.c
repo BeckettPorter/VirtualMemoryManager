@@ -82,8 +82,17 @@ Frame* evictFrame()
 VOID modifiedPageWrite(Frame* frameToWrite)
 {
     // while modifiedList != empty, swapToDisk, add to free list
+    // TODO bp: fix this
+    // while (modifiedList != NULL)
+    // {
+    //     // Swap the victim to disk
+    //     PageTableEntry* PTEToSwap = popFirstFrame(&modifiedList)->PTE;
+    //     swapToDisk(PTEToSwap);
+    //
+    //     freeList = addToList(freeList, findFrameFromFrameNumber
+    //         (PTEToSwap->transitionFormat.pageFrameNumber));
+    // }
 
-    // Swap the victim to disk
     swapToDisk(frameToWrite->PTE);
 }
 
