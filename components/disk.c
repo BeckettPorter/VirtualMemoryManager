@@ -45,7 +45,7 @@ VOID swapToDisk(PageTableEntry* pageToSwap)
     freeDiskSpace[freeDiskSlot] = false;
 
 
-    findFrameFromFrameNumber(pageToSwap->transitionFormat.pageFrameNumber)->diskIndex = freeDiskSlot;
+    frameToRemove->diskIndex = freeDiskSlot;
 
     pageToSwap->transitionFormat.isTransitionFormat = 0;
 

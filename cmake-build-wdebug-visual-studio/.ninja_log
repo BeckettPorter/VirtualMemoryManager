@@ -54,3 +54,6 @@
 16	787	7731808681569053	CMakeFiles/VirtualMemoryManager.dir/components/initialize.c.obj	e981f4d8f357b8dd
 45	818	7731808681849174	CMakeFiles/VirtualMemoryManager.dir/components/pages.c.obj	96cc71be5cef9585
 818	1009	7731808689585295	VirtualMemoryManager.exe	6875cb9e6abe5ec6
+14	931	7731842969320927	CMakeFiles/VirtualMemoryManager.dir/components/disk.c.obj	5048aa3f89497d34
+9	953	7731842969280920	CMakeFiles/VirtualMemoryManager.dir/vm.c.obj	713390c2571b67ac
+953	1371	7731842978713249	VirtualMemoryManager.exe	6875cb9e6abe5ec6
