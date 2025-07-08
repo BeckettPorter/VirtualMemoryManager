@@ -421,6 +421,7 @@ VOID full_virtual_memory_test (VOID)
     initLists();
     initDiskSpace();
 
+    // while (true) {
     for (i = 0; i < MB (1); i += 1) {
 
         //
@@ -462,7 +463,7 @@ VOID full_virtual_memory_test (VOID)
         // Calc PTE for this VA
         PageTableEntry* currentPTE = VAToPageTableEntry(arbitrary_va);
         ULONG64 frameNumber;
-        volatile Frame* currentFrame;
+        Frame* currentFrame;
 
         __try {
 
@@ -538,7 +539,6 @@ VOID full_virtual_memory_test (VOID)
                     pteContents.invalidFormat.mustBeZero = 0;
                     pteContents.invalidFormat.isTransitionFormat = 0;
 
-                    // // #TODO bp, this is probably going to mess it up but I am commenting it out for now
                     pteContents.invalidFormat.diskIndex =
                         findFrameFromFrameNumber(victimPTE->transitionFormat.pageFrameNumber)->diskIndex;
 
