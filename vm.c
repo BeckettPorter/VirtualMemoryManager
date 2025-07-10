@@ -421,8 +421,8 @@ VOID full_virtual_memory_test (VOID)
     initLists();
     initDiskSpace();
 
-    while (true) {
-    // for (i = 0; i < MB (1); i += 1) {
+    // while (true) {
+    for (i = 0; i < MB (1); i += 1) {
 
         //
         // Randomly access different portions of the virtual address

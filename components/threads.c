@@ -38,10 +38,17 @@ typedef struct _THREAD_INFO {
 
 #define MAXIMUM_NUMBER_OF_THREADS 4
 
+
+VOID bogusFunction(PVOID blah)
+{
+	ULONG64 number = (ULONG64) blah;
+	number += 2;
+	printf("%llu", number);
+}
+
+
 ULONG
-CacheContentionWorker (
-    _In_ PVOID Context
-    )
+CacheContentionWorker (_In_ PVOID Context)
 {
 	ULONG i;
     ULONG ThreadNumber;
@@ -95,9 +102,7 @@ CacheContentionWorker (
 }
 
 VOID
-UseThreads (
-    LPTHREAD_START_ROUTINE ThreadFunction
-    )
+UseThreads (LPTHREAD_START_ROUTINE ThreadFunction)
 {
 	ULONG i;
 	BOOL ReturnValue;
@@ -136,8 +141,8 @@ UseThreads (
 
 	    Handle = CreateThread (DEFAULT_SECURITY,
                                DEFAULT_STACK_SIZE,
-                               ThreadFunction,
-                               ThreadContext,
+                               bogusFunction,
+                               (LPVOID) 3,
                                DEFAULT_CREATION_FLAGS,
                                &ThreadContext->ThreadId);
 

@@ -108,6 +108,6 @@ Frame* findFrameFromFrameNumber(ULONG64 frameNumber)
         }
     }
     DebugBreak();
-    exit(-1);
+    exit(-2);
     // write fatal print here
 }
