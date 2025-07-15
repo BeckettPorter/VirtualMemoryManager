@@ -34,6 +34,20 @@ VOID initLists()
     }
 }
 
+VOID initFrameMap()
+{
+    ULONG64 maxPFN = 0;
+    for (ULONG64 i = 0; i < physical_page_count; ++i) {
+        if (pfnArray[i].physicalFrameNumber > maxPFN) {
+            maxPFN = pfnArray[i].physicalFrameNumber;
+        }
+    }
+
+    frameMapSize = (maxPFN + 1) * sizeof(Frame*);
+
+    frameMap = VirtualAlloc(NULL, frameMapSize, MEM_RESERVE, PAGE_READWRITE);
+}
+
 VOID initDiskSpace()
 {
     transferVA = VirtualAlloc (NULL,

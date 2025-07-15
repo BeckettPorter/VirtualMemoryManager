@@ -98,16 +98,9 @@ VOID modifiedPageWrite(Frame* frameToWrite)
 
 Frame* findFrameFromFrameNumber(ULONG64 frameNumber)
 {
-    // how many pages AllocateUserPhysicalPages actually returned
-    ULONG64 count = physical_page_count;
+    ULONG64 index = frameNumber / (sizeof(Frame*));
+    frameMap[frameNumber] = VirtualAlloc (&frameMap + index, sizeof(Frame*),
+        MEM_COMMIT, PAGE_READWRITE);
 
-    for (ULONG64 i = 0; i < count; ++i) {
-
-        if (pfnArray[i].physicalFrameNumber == frameNumber) {
-            return &pfnArray[i];
-        }
-    }
-    DebugBreak();
-    exit(-2);
-    // write fatal print here
+    return frameMap[frameNumber];
 }

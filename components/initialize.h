@@ -9,6 +9,11 @@
 
 VOID initLists();
 
+VOID initFrameMap();
+
+Frame** frameMap;
+ULONG64 frameMapSize;
+
 VOID initDiskSpace();
 
 
