@@ -32,7 +32,7 @@ void* PageTableEntryToVA(PageTableEntry* entry)
 }
 
 // Returns the new head of the list.
-Frame* addToList(Frame* head, Frame* item) {
+Frame* addToFrameList(Frame* head, Frame* item) {
     if (!item) return head;
     item->nextPFN = head;
     return item;
@@ -40,7 +40,7 @@ Frame* addToList(Frame* head, Frame* item) {
 
 // Removes `item` from the list `head` (if present).
 // Returns the new head of the list.
-Frame* removeFromList(Frame* head, Frame* item) {
+Frame* removeFromFrameList(Frame* head, Frame* item) {
     if (!head || !item) return head;
 
     // If the item to remove is the head, pop it off.
@@ -107,4 +107,27 @@ boolean wipePage(ULONG64 frameNumber)
     }
 
     return true;
+}
+
+
+VOID addListEntry(ListEntry* head, ListEntry* entry) {
+    // If the list is empty, add the entry to the head and tail.
+    if (head->flink == NULL)
+    {
+        head->flink = head;
+        head->blink = head;
+    }
+
+    entry->flink      = head;
+    entry->blink      = head->blink;
+    head->blink->flink = entry;
+    head->blink       = entry;
+}
+
+
+ListEntry* removeListEntry(ListEntry* entry) {
+    entry->blink->flink = entry->flink;
+    entry->flink->blink = entry->blink;
+    entry->flink = entry->blink = NULL;
+    return entry;
 }

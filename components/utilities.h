@@ -85,8 +85,8 @@ Frame* standbyList;
 PageTableEntry* VAToPageTableEntry(void* virtualAddress);
 void* PageTableEntryToVA(PageTableEntry* entry);
 
-Frame* addToList(Frame* head, Frame* item);
-Frame* removeFromList(Frame* head, Frame* item);
+Frame* addToFrameList(Frame* head, Frame* item);
+Frame* removeFromFrameList(Frame* head, Frame* item);
 Frame* popFirstFrame(Frame** headPtr);
 
 

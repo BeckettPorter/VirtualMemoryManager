@@ -16,7 +16,7 @@ VOID swapToDisk(PageTableEntry* pageToSwap)
 
     Frame* frameToRemove = findFrameFromFrameNumber(frameNumber);
 
-    modifiedList = removeFromList(modifiedList, frameToRemove);
+    modifiedList = removeFromFrameList(modifiedList, frameToRemove);
     frameToRemove->isOnModifiedList = 0;
 
     if (MapUserPhysicalPages (transferVA, 1, &frameNumber) == FALSE) {

@@ -71,7 +71,7 @@ Frame* evictFrame()
     victimPTE->entireFormat = PTEContents.entireFormat;
 
     // NEED TO ADD TO MODIFIED LIST
-    modifiedList = addToList(modifiedList, currentFrame);
+    modifiedList = addToFrameList(modifiedList, currentFrame);
 
     // Set to be on modified list in frame.
     currentFrame->isOnModifiedList = 1;

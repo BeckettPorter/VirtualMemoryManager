@@ -488,11 +488,11 @@ VOID full_virtual_memory_test (VOID)
                 // NEED TO REMOVE FROM MODIFIED LIST IF WE GRAB BACK
                 if (currentFrame->isOnModifiedList == 1)
                 {
-                    modifiedList = removeFromList(modifiedList, currentFrame);
+                    modifiedList = removeFromFrameList(modifiedList, currentFrame);
                 }
                 else
                 {
-                    standbyList = removeFromList(standbyList, currentFrame);
+                    standbyList = removeFromFrameList(standbyList, currentFrame);
 
                     ULONG64 diskIndex = findFrameFromFrameNumber(currentFrame)->diskIndex;
 
@@ -581,7 +581,7 @@ VOID full_virtual_memory_test (VOID)
             currentFrame->PTE = currentPTE;
 
             // Add to active list
-            activeList = addToList(activeList, currentFrame);
+            activeList = addToFrameList(activeList, currentFrame);
 
             //
             // No exception handler needed now since we have connected
