@@ -26,19 +26,7 @@ VOID swapToDisk(PageTableEntry* pageToSwap)
         return;
     }
 
-    ULONG64 freeDiskSlot = 0;
-
-    // Go through our boolean array to find free a free disk slot.
-    while (freeDiskSlot < NUMBER_OF_VIRTUAL_PAGES && !freeDiskSpace[freeDiskSlot])
-    {
-        freeDiskSlot++;
-    }
-    // 1 to 1, fix later
-    if (freeDiskSlot == NUMBER_OF_VIRTUAL_PAGES)
-    {
-        printf("swapToDisk: No free disk slots!");
-        // exit(-1);
-    }
+    ULONG64 freeDiskSlot = findFreeDiskSlot();
 
     memcpy(totalDiskSpace + freeDiskSlot * PAGE_SIZE, transferVA, PAGE_SIZE);
     // Set the disk space we just copied to to false so we know it is in use.
@@ -54,6 +42,23 @@ VOID swapToDisk(PageTableEntry* pageToSwap)
         printf("swapToDisk: Failed to map user physical pages!");
         exit(-1);
     }
+}
+
+DECLSPEC_NOINLINE
+ULONG64 findFreeDiskSlot()
+{
+    if (diskSlotsArrayList.flink == &diskSlotsArrayList) {
+        printf("No free disk slots available!\n");
+        exit(-1);
+    }
+
+    ULONG64Node* node = CONTAINING_RECORD(diskSlotsArrayList.flink, ULONG64Node, listEntry);
+    removeListEntry(&node->listEntry);
+
+    ULONG64 value = node->value;
+    free(node);
+
+    return value;
 }
 
 VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom)
@@ -80,8 +85,29 @@ VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom)
     freeDiskSpace[diskIndexToTransferFrom] = true;
 
 
+    // Create a new node for this slot and add it back to the list
+    ULONG64Node* freedNode = createNode(diskIndexToTransferFrom);
+    if (!freedNode) {
+        printf("Memory allocation failed for freed ULONG64Node in swapFromDisk!\n");
+        exit(-1);
+    }
+    addListEntry(&diskSlotsArrayList, &freedNode->listEntry);
+
+
     if (!MapUserPhysicalPages(transferVA, 1, NULL)) {
         printf("swapFromDisk: Failed to map user physical pages!");
         exit(-1);
     }
+}
+
+ULONG64Node* createNode(ULONG64 value)
+{
+    ULONG64Node* node = malloc(sizeof(ULONG64Node));
+    if (node) {
+        node->value = value;
+        node->listEntry.flink = NULL;  // Initialize to NULL, to be set by addListEntry
+        node->listEntry.blink = NULL;  // Initialize to NULL
+    }
+    return node;
+
 }

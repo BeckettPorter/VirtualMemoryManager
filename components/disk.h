@@ -14,6 +14,18 @@ void* transferVA;
 
 VOID swapToDisk(PageTableEntry* pageToSwap);
 
+ULONG64 findFreeDiskSlot();
+
 VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom);
+
+typedef struct ULONG64Node
+{
+    ULONG64 value;
+    ListEntry listEntry;
+} ULONG64Node;
+
+ULONG64Node* createNode(ULONG64 value);
+
+ListEntry diskSlotsArrayList;
 
 #endif //DISK_H

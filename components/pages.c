@@ -98,9 +98,5 @@ VOID modifiedPageWrite(Frame* frameToWrite)
 
 Frame* findFrameFromFrameNumber(ULONG64 frameNumber)
 {
-    ULONG64 index = frameNumber / (sizeof(Frame*));
-    frameMap[frameNumber] = VirtualAlloc (&frameMap + index, sizeof(Frame*),
-        MEM_COMMIT, PAGE_READWRITE);
-
-    return frameMap[frameNumber];
+    return &frameMap[frameNumber];
 }

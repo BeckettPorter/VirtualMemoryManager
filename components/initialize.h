@@ -11,7 +11,7 @@ VOID initLists();
 
 VOID initFrameMap();
 
-Frame** frameMap;
+Frame* frameMap;
 ULONG64 frameMapSize;
 
 VOID initDiskSpace();
