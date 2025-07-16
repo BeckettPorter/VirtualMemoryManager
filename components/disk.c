@@ -12,21 +12,35 @@
 // In future, can add number of pages to swap here and pass array
 VOID swapToDisk(PageTableEntry* pageToSwap)
 {
-    ULONG64 frameNumber = pageToSwap->transitionFormat.pageFrameNumber;
+    ULONG64 numPagesToActuallySwap = MAX_WRITE_PAGES;
 
-    Frame* frameToRemove = findFrameFromFrameNumber(frameNumber);
+    // Check my modified list, I want to write all of those out in one batch
+    // But first check if we have enough disk slots to do this, otherwise only get as many off the modified
+    // list as I have free disk slots.
+    ULONG64 freeDiskSlot = findFreeDiskSlot();
+
+
+    ULONG64 swapFramesArray = pageToSwap->transitionFormat.pageFrameNumber;
+
+    for (int i = 0; i < numPagesToActuallySwap; i++)
+    {
+        Frame* currentFrame = findFrameFromFrameNumber(swapFramesArray);
+        modifiedList = removeFromFrameList(modifiedList, currentFrame);
+        swapFramesArray += currentFrame;
+    }
+
+    Frame* frameToRemove = findFrameFromFrameNumber(swapFramesArray);
 
     modifiedList = removeFromFrameList(modifiedList, frameToRemove);
     frameToRemove->isOnModifiedList = 0;
 
-    if (MapUserPhysicalPages (transferVA, 1, &frameNumber) == FALSE) {
+    if (MapUserPhysicalPages (transferVA, numPagesToActuallySwap, &swapFramesArray) == FALSE) {
         printf ("swapToDisk : could not map VA %p to page %llX\n", transferVA,
-            frameNumber);
+            swapFramesArray);
 
         return;
     }
 
-    ULONG64 freeDiskSlot = findFreeDiskSlot();
 
     memcpy(totalDiskSpace + freeDiskSlot * PAGE_SIZE, transferVA, PAGE_SIZE);
     // Set the disk space we just copied to to false so we know it is in use.
