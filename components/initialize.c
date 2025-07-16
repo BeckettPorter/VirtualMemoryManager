@@ -73,7 +73,7 @@ VOID initFrameMap()
 VOID initDiskSpace()
 {
     transferVA = VirtualAlloc (NULL,
-                      PAGE_SIZE,
+                      PAGE_SIZE * MAX_WRITE_PAGES,
                       MEM_RESERVE | MEM_PHYSICAL,
                       PAGE_READWRITE);
 
