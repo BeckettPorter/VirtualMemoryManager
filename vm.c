@@ -419,6 +419,7 @@ VOID full_virtual_memory_test (VOID)
 
 
     initLists();
+    initFrameMap();
     initDiskSpace();
 
     // while (true) {

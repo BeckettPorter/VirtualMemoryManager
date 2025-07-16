@@ -62,6 +62,13 @@ typedef struct Frame
 } Frame;
 
 
+typedef struct ListEntry {
+    struct ListEntry* flink;
+    struct ListEntry* blink;
+} ListEntry;
+
+
+
 // Variables
 PageTableEntry* pageTable;
 void* vaStartLoc;
@@ -74,7 +81,6 @@ Frame* activeList;
 Frame* modifiedList;
 Frame* standbyList;
 
-
 // Functions
 PageTableEntry* VAToPageTableEntry(void* virtualAddress);
 void* PageTableEntryToVA(PageTableEntry* entry);
@@ -83,8 +89,13 @@ Frame* addToList(Frame* head, Frame* item);
 Frame* removeFromList(Frame* head, Frame* item);
 Frame* popFirstFrame(Frame** headPtr);
 
+
 VOID checkVa(PULONG64 va);
 
 boolean wipePage(ULONG64 frameNumber);
+
+VOID addListEntry(ListEntry* head, ListEntry* entry);
+
+ListEntry* removeListEntry(ListEntry* entry);
 
 #endif //UTILITIES_H
