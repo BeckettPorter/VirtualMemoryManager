@@ -68,19 +68,8 @@ VOID initDiskSpace()
     totalDiskSpace = malloc(VIRTUAL_ADDRESS_SIZE);
     freeDiskSpace = malloc(NUMBER_OF_VIRTUAL_PAGES * sizeof(*freeDiskSpace));
 
-    diskSlotsArrayList.flink = &diskSlotsArrayList;
-    diskSlotsArrayList.blink = &diskSlotsArrayList;
-
     for (ULONG64 i = 0; i < NUMBER_OF_VIRTUAL_PAGES; i++)
     {
         freeDiskSpace[i] = TRUE;
-
-        ULONG64Node* node = createNode(i);
-        if (!node) {
-            printf("Memory allocation failed for ULONG64Node!\n");
-            exit(-1);
-        }
-
-        addListEntry(&diskSlotsArrayList, &node->listEntry);  // Fix: pass &node->listEntry
     }
 }

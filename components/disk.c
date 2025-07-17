@@ -21,6 +21,8 @@ VOID swapToDisk()
 
     ULONG64 currentFreeDiskSlot = findFreeDiskSlot();
 
+    ULONG64 numDiskSlotsReleased = 0;
+
     if (currentFreeDiskSlot == -1)
     {
         printf("No free disk slots available at all when tried to swap to disk!");
@@ -31,6 +33,7 @@ VOID swapToDisk()
     {
         diskSlotsToBatch[numPagesToActuallySwap] = currentFreeDiskSlot;
         numPagesToActuallySwap++;
+        numDiskSlotsReleased++;
         currentFreeDiskSlot = findFreeDiskSlot();
     }
 
@@ -79,6 +82,7 @@ VOID swapToDisk()
         currentFrame->PTE->transitionFormat.isTransitionFormat = 0;
     }
 
+
     if (!MapUserPhysicalPages(transferVA, numPagesToActuallySwap, NULL)) {
         printf("swapToDisk: Failed to unmap user physical pages!");
         exit(-1);
@@ -88,18 +92,18 @@ VOID swapToDisk()
 // DECLSPEC_NOINLINE
 ULONG64 findFreeDiskSlot()
 {
-    if (diskSlotsArrayList.flink == &diskSlotsArrayList) {
-        printf("No free disk slots available!\n");
-        return -1;
+    // Make this start at last found slot in future
+    ULONG64 currentSearchIndex = 0;
+    while (currentSearchIndex < NUMBER_OF_VIRTUAL_PAGES && freeDiskSpace[currentSearchIndex] == false)
+    {
+        currentSearchIndex++;
     }
 
-    ULONG64Node* node = CONTAINING_RECORD(diskSlotsArrayList.flink, ULONG64Node, listEntry);
-    removeListEntry(&node->listEntry);
-
-    ULONG64 value = node->value;
-    free(node);
-
-    return value;
+    if (currentSearchIndex == NUMBER_OF_VIRTUAL_PAGES)
+    {
+        return -1;
+    }
+    return freeDiskSpace[currentSearchIndex];
 }
 
 VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom)
@@ -126,29 +130,8 @@ VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom)
     freeDiskSpace[diskIndexToTransferFrom] = true;
 
 
-    // Create a new node for this slot and add it back to the list
-    ULONG64Node* freedNode = createNode(diskIndexToTransferFrom);
-    if (!freedNode) {
-        printf("Memory allocation failed for freed ULONG64Node in swapFromDisk!\n");
-        exit(-1);
-    }
-    addListEntry(&diskSlotsArrayList, &freedNode->listEntry);
-
-
     if (!MapUserPhysicalPages(transferVA, 1, NULL)) {
         printf("swapFromDisk: Failed to map user physical pages!");
         exit(-1);
     }
-}
-
-ULONG64Node* createNode(ULONG64 value)
-{
-    ULONG64Node* node = malloc(sizeof(ULONG64Node));
-    if (node) {
-        node->value = value;
-        node->listEntry.flink = NULL;  // Initialize to NULL, to be set by addListEntry
-        node->listEntry.blink = NULL;  // Initialize to NULL
-    }
-    return node;
-
 }

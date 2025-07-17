@@ -18,16 +18,6 @@ ULONG64 findFreeDiskSlot();
 
 VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom);
 
-typedef struct ULONG64Node
-{
-    ULONG64 value;
-    ListEntry listEntry;
-} ULONG64Node;
-
-ULONG64Node* createNode(ULONG64 value);
-
-ListEntry diskSlotsArrayList;
-
 ULONG64* diskSlotsToBatch;
 
 #endif //DISK_H
