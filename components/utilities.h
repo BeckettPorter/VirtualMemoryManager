@@ -12,7 +12,9 @@
 #define VIRTUAL_ADDRESS_SIZE_IN_UNSIGNED_CHUNKS        (VIRTUAL_ADDRESS_SIZE / sizeof (ULONG_PTR))
 #define NUMBER_OF_PHYSICAL_PAGES   ((VIRTUAL_ADDRESS_SIZE / PAGE_SIZE) / 64)
 #define NUMBER_OF_VIRTUAL_PAGES (VIRTUAL_ADDRESS_SIZE / PAGE_SIZE)
-#define MAX_WRITE_PAGES 16;
+#define MAX_WRITE_PAGES 16
+
+#define ASSERT(x) if (!(x)) { DebugBreak(); }
 #include <windows.h>
 
 
@@ -54,8 +56,6 @@ typedef union
 // Frame is on ram, PAGES are on ram, but then copied to disk when
 typedef struct Frame
 {
-    // Physical frame number could be removed and instead use inverse of findFrameFromFrameNumber
-    ULONG64 physicalFrameNumber;
     struct Frame* nextPFN;
     PageTableEntry* PTE;
     // If this is 1, we are on the modified list, otherwise on the standby list.
@@ -94,10 +94,12 @@ Frame* popFirstFrame(Frame** headPtr);
 
 VOID checkVa(PULONG64 va);
 
-boolean wipePage(ULONG64 frameNumber);
+boolean wipePage(Frame* frameToWipe);
 
 VOID addListEntry(ListEntry* head, ListEntry* entry);
 
 ListEntry* removeListEntry(ListEntry* entry);
+
+
 
 #endif //UTILITIES_H

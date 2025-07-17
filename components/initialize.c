@@ -10,64 +10,52 @@
 #include "utilities.h"
 
 
-VOID initLists()
+VOID initListsAndPFNs()
 {
-    ULONG64 count = physical_page_count;  // how many pages AllocateUserPhysicalPages actually returned
-
-
     ULONG64 numBytes = VIRTUAL_ADDRESS_SIZE / PAGE_SIZE * sizeof(PageTableEntry);
 
     pageTable = malloc(numBytes);
     memset(pageTable, 0, numBytes);
 
+    // Find the highest PFN in the PFN array.
+    ULONG64 maxPFN = 0;
+    for (ULONG64 i = 0; i < physical_page_count; ++i) {
+        if (physical_page_numbers[i] > maxPFN) {
+            maxPFN = physical_page_numbers[i];
+        }
+    }
+
+    ULONG64 pfnArraySize = (maxPFN + 1) * sizeof(Frame);
+
     // build PFN list only from actually owned pages
-    pfnArray = malloc(count * sizeof(Frame));
+    pfnArray = VirtualAlloc(
+        NULL,
+        pfnArraySize,
+        MEM_RESERVE,
+        PAGE_READWRITE);
+
     freeList = NULL;
     activeList = NULL;
     modifiedList = NULL;
     standbyList = NULL;
 
-    for (ULONG64 i = 0; i < count; ++i) {
-        pfnArray[i].physicalFrameNumber = physical_page_numbers[i];
-        pfnArray[i].nextPFN = freeList;
-        freeList = &pfnArray[i];
-        pfnArray[i].PTE = NULL;
-        pfnArray[i].isOnModifiedList = 0;
-    }
-}
-
-VOID initFrameMap()
-{
-    ULONG64 maxPFN = 0;
-    for (ULONG64 i = 0; i < physical_page_count; ++i) {
-        if (pfnArray[i].physicalFrameNumber > maxPFN) {
-            maxPFN = pfnArray[i].physicalFrameNumber;
-        }
-    }
-
-    frameMapSize = (maxPFN + 1) * sizeof(Frame);
-
-    // Allocate the entire space we could have frames, we will then only commit the actual ones we need.
-    frameMap = VirtualAlloc(
-        NULL,
-        frameMapSize,
-        MEM_RESERVE,
-        PAGE_READWRITE);
-
-
+    // For each physical page we have, commit the memory for it in the sparse arary.
     for (ULONG64 i = 0; i < physical_page_count; i++)
     {
-        ULONG64 currentFrameNumber = pfnArray[i].physicalFrameNumber;
+        ULONG64 currentFrameNumber = physical_page_numbers[i];
 
-        // Go through our frameMap array and actually commit where we have frames.
+        // Go through our pfnArray and actually commit where we have frames.
         VirtualAlloc (
-            frameMap + currentFrameNumber,
+            pfnArray + currentFrameNumber,
             sizeof(Frame),
             MEM_COMMIT,
             PAGE_READWRITE);
+
+        pfnArray[currentFrameNumber].nextPFN = freeList;
+        freeList = &pfnArray[currentFrameNumber];
+        pfnArray[currentFrameNumber].PTE = NULL;
+        pfnArray[currentFrameNumber].isOnModifiedList = 0;
     }
-
-
 }
 
 VOID initDiskSpace()

@@ -52,7 +52,7 @@ Frame* evictFrame()
     if (MapUserPhysicalPages (PageTableEntryToVA(currentFrame->PTE), 1, NULL) == FALSE) {
 
         printf ("evictFrame : could not unmap VA %p to page %llX\n", PageTableEntryToVA(currentFrame->PTE),
-            currentFrame->physicalFrameNumber);
+            findFrameNumberFromFrame(currentFrame));
 
         DebugBreak();
     }
@@ -64,7 +64,7 @@ Frame* evictFrame()
     PTEContents.entireFormat = 0;
     PTEContents.transitionFormat.isTransitionFormat = 1;
     PTEContents.transitionFormat.mustBeZero = 0;
-    PTEContents.transitionFormat.pageFrameNumber = currentFrame->physicalFrameNumber;
+    PTEContents.transitionFormat.pageFrameNumber = findFrameNumberFromFrame(currentFrame);
 
     findFrameFromFrameNumber(PTEContents.transitionFormat.pageFrameNumber)->diskIndex = 0;
 
@@ -79,7 +79,7 @@ Frame* evictFrame()
     return currentFrame;
 }
 
-VOID modifiedPageWrite(Frame* frameToWrite)
+VOID modifiedPageWrite()
 {
     // while modifiedList != empty, swapToDisk, add to free list
     // TODO bp: fix this
@@ -93,10 +93,15 @@ VOID modifiedPageWrite(Frame* frameToWrite)
     //         (PTEToSwap->transitionFormat.pageFrameNumber));
     // }
 
-    swapToDisk(frameToWrite->PTE);
+    swapToDisk();
 }
 
 Frame* findFrameFromFrameNumber(ULONG64 frameNumber)
 {
-    return &frameMap[frameNumber];
+    return &pfnArray[frameNumber];
+}
+
+ULONG64 findFrameNumberFromFrame(Frame* frame)
+{
+    return frame - pfnArray;
 }
