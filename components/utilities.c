@@ -9,6 +9,7 @@
 #include <windows.h>
 
 #include "disk.h"
+#include "pages.h"
 
 
 PageTableEntry* VAToPageTableEntry(void* virtualAddress)
@@ -85,12 +86,13 @@ checkVa(PULONG64 va) {
     }
 }
 
-boolean wipePage(ULONG64 frameNumber)
+boolean wipePage(Frame* frameToWipe)
 {
-    if (MapUserPhysicalPages (transferVA, 1, &frameNumber) == FALSE) {
+    ULONG64 frameNumberToWipe = findFrameNumberFromFrame(frameToWipe);
+    if (MapUserPhysicalPages (transferVA, 1, &frameNumberToWipe) == FALSE) {
 
         printf ("wipePage : could not map transferVA %p to frame num %llX\n", transferVA,
-            frameNumber);
+            frameNumberToWipe);
 
         DebugBreak();
         return false;
@@ -101,7 +103,7 @@ boolean wipePage(ULONG64 frameNumber)
     if (MapUserPhysicalPages (transferVA, 1, NULL) == FALSE) {
 
         printf ("wipePage : could not unmap transferVA %p from frame num %llX\n", transferVA,
-            frameNumber);
+            frameNumberToWipe);
 
         return false;
     }

@@ -418,8 +418,7 @@ VOID full_virtual_memory_test (VOID)
     //
 
 
-    initLists();
-    initFrameMap();
+    initListsAndPFNs();
     initDiskSpace();
 
     // while (true) {
@@ -509,7 +508,7 @@ VOID full_virtual_memory_test (VOID)
                     if (standbyList != NULL)
                     {
                         currentFrame = popFirstFrame(&standbyList);
-                        if (wipePage(currentFrame->physicalFrameNumber) == false)
+                        if (wipePage(currentFrame) == false)
                         {
                             printf("wipePage failed in full_virtual_memory_test\n");
                             return;
@@ -520,11 +519,12 @@ VOID full_virtual_memory_test (VOID)
                         // If we can't get any from standby list
                         Frame *victim = evictFrame();
 
-                        modifiedPageWrite(victim);
+                        // When do i actually want to call this??
+                        modifiedPageWrite();
 
                         currentFrame = victim;
 
-                        if (wipePage(currentFrame->physicalFrameNumber) == false)
+                        if (wipePage(currentFrame) == false)
                         {
                             printf("wipePage failed in full_virtual_memory_test\n");
                             return;
@@ -547,7 +547,7 @@ VOID full_virtual_memory_test (VOID)
 
                 }
 
-                frameNumber = currentFrame->physicalFrameNumber;
+                frameNumber = findFrameNumberFromFrame(currentFrame);
 
                 // Now we have a page. Now we decide to swap from disk or not.
                 if (currentPTE->entireFormat == 0)
@@ -576,7 +576,7 @@ VOID full_virtual_memory_test (VOID)
 
             // Fill in fields for PTE (valid bit, page frame number)
             currentPTE->validFormat.isValid = 1;
-            currentPTE->validFormat.pageFrameNumber = currentFrame->physicalFrameNumber;
+            currentPTE->validFormat.pageFrameNumber = findFrameNumberFromFrame(currentFrame);
 
             currentFrame->PTE = currentPTE;
 

@@ -7,12 +7,7 @@
 #include "utilities.h"
 
 
-VOID initLists();
-
-VOID initFrameMap();
-
-Frame* frameMap;
-ULONG64 frameMapSize;
+VOID initListsAndPFNs();
 
 VOID initDiskSpace();
 

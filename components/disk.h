@@ -12,7 +12,7 @@ boolean* freeDiskSpace;
 void* transferVA;
 
 
-VOID swapToDisk(PageTableEntry* pageToSwap);
+VOID swapToDisk();
 
 ULONG64 findFreeDiskSlot();
 
@@ -27,5 +27,7 @@ typedef struct ULONG64Node
 ULONG64Node* createNode(ULONG64 value);
 
 ListEntry diskSlotsArrayList;
+
+ULONG64* diskSlotsToBatch;
 
 #endif //DISK_H
