@@ -79,7 +79,7 @@ Frame* evictFrame()
     return currentFrame;
 }
 
-VOID tryModifiedPageWrite()
+VOID modifiedPageWrite()
 {
     numAttemptedModWrites++;
 

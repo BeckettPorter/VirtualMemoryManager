@@ -520,7 +520,7 @@ VOID full_virtual_memory_test (VOID)
                         Frame *victim = evictFrame();
 
                         // When do i actually want to call this??
-                        tryModifiedPageWrite();
+                        modifiedPageWrite();
 
                         currentFrame = victim;
 
