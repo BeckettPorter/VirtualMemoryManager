@@ -79,21 +79,15 @@ Frame* evictFrame()
     return currentFrame;
 }
 
-VOID modifiedPageWrite()
+VOID tryModifiedPageWrite()
 {
-    // while modifiedList != empty, swapToDisk, add to free list
-    // TODO bp: fix this
-    // while (modifiedList != NULL)
-    // {
-    //     // Swap the victim to disk
-    //     PageTableEntry* PTEToSwap = popFirstFrame(&modifiedList)->PTE;
-    //     swapToDisk(PTEToSwap);
-    //
-    //     freeList = addToList(freeList, findFrameFromFrameNumber
-    //         (PTEToSwap->transitionFormat.pageFrameNumber));
-    // }
+    numAttemptedModWrites++;
 
-    swapToDisk();
+    if (numAttemptedModWrites > 10)
+    {
+        numAttemptedModWrites = 0;
+        swapToDisk();
+    }
 }
 
 Frame* findFrameFromFrameNumber(ULONG64 frameNumber)

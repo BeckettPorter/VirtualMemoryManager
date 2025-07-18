@@ -520,7 +520,7 @@ VOID full_virtual_memory_test (VOID)
                         Frame *victim = evictFrame();
 
                         // When do i actually want to call this??
-                        modifiedPageWrite();
+                        tryModifiedPageWrite();
 
                         currentFrame = victim;
 
@@ -571,6 +571,8 @@ VOID full_virtual_memory_test (VOID)
 
                 return;
             }
+
+            // #TODO bp: commented this out because right now our VAs are failing...
             checkVa(arbitrary_va);
 
 

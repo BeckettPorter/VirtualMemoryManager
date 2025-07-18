@@ -9,7 +9,10 @@
 
 unsigned char* totalDiskSpace;
 boolean* freeDiskSpace;
+ULONG64 lastUsedFreeDiskSlot;
 void* transferVA;
+ULONG64 numAttemptedModWrites;
+
 
 
 VOID swapToDisk();

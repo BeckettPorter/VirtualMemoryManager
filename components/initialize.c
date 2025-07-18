@@ -67,9 +67,12 @@ VOID initDiskSpace()
 
     totalDiskSpace = malloc(VIRTUAL_ADDRESS_SIZE);
     freeDiskSpace = malloc(NUMBER_OF_VIRTUAL_PAGES * sizeof(*freeDiskSpace));
+    lastUsedFreeDiskSlot = 0;
 
     for (ULONG64 i = 0; i < NUMBER_OF_VIRTUAL_PAGES; i++)
     {
         freeDiskSpace[i] = TRUE;
     }
+
+    numAttemptedModWrites = 0;
 }
