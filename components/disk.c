@@ -19,30 +19,25 @@ VOID swapToDisk()
     // list as I have free disk slots.
     ULONG64 numPagesToActuallySwap = 0;
 
-    ULONG64 currentFreeDiskSlot = findFreeDiskSlot();
 
-    ULONG64 numDiskSlotsReleased = 0;
-
-    if (currentFreeDiskSlot == -1)
+    while (numPagesToActuallySwap < MAX_WRITE_PAGES)
     {
-        printf("No free disk slots available at all when tried to swap to disk!");
-        DebugBreak();
-    }
+        ULONG64 currentFreeDiskSlot = findFreeDiskSlot();
 
-    while (currentFreeDiskSlot != -1 && numPagesToActuallySwap < MAX_WRITE_PAGES)
-    {
+        if (currentFreeDiskSlot == -1)
+        {
+            break;
+        }
         diskSlotsToBatch[numPagesToActuallySwap] = currentFreeDiskSlot;
+
         numPagesToActuallySwap++;
-        numDiskSlotsReleased++;
-        currentFreeDiskSlot = findFreeDiskSlot();
     }
 
-    Frame* currentFrame;
     ULONG64 swapFrameNumbers[MAX_WRITE_PAGES];
 
-    for (int i = 0; i < numPagesToActuallySwap; i++)
+    for (ULONG64 i = 0; i < numPagesToActuallySwap; i++)
     {
-        currentFrame = popFirstFrame(&modifiedList);
+        Frame* currentFrame = popFirstFrame(&modifiedList);
         if (!currentFrame)
         {
             numPagesToActuallySwap = i;
@@ -56,6 +51,7 @@ VOID swapToDisk()
 
     ASSERT(numPagesToActuallySwap != 0);
 
+
     if (MapUserPhysicalPages (transferVA, numPagesToActuallySwap, swapFrameNumbers) == FALSE) {
         printf ("swapToDisk : could not map VA %p to page %llX\n", transferVA,
             swapFrameNumbers);
@@ -64,24 +60,22 @@ VOID swapToDisk()
         return;
     }
 
-    for (int i = 0; i < numPagesToActuallySwap; i++)
+    for (ULONG64 i = 0; i < numPagesToActuallySwap; i++)
     {
         ULONG64 currentDiskSlot = diskSlotsToBatch[i];
 
-        PVOID localVA = (PVOID) ((ULONG_PTR) transferVA + (i * PAGE_SIZE));
+        Frame* currentFrame = findFrameFromFrameNumber(swapFrameNumbers[i]);
 
-        memcpy(totalDiskSpace + currentDiskSlot * PAGE_SIZE, localVA, PAGE_SIZE);
+        PVOID copyVA = (PVOID) ((ULONG_PTR)transferVA + i * PAGE_SIZE);
 
-        // Set the disk space we just copied to to false so we know it is in use.
-        freeDiskSpace[currentDiskSlot] = false;
+        // Copy the contents of the VA to the disk space we are trying to write to.
+        memcpy(totalDiskSpace + currentDiskSlot * PAGE_SIZE, copyVA, PAGE_SIZE);
 
-        currentFrame = findFrameFromFrameNumber(swapFrameNumbers[i]);
 
         currentFrame->diskIndex = currentDiskSlot;
 
         currentFrame->PTE->transitionFormat.isTransitionFormat = 0;
     }
-
 
     if (!MapUserPhysicalPages(transferVA, numPagesToActuallySwap, NULL)) {
         printf("swapToDisk: Failed to unmap user physical pages!");
@@ -93,7 +87,8 @@ VOID swapToDisk()
 ULONG64 findFreeDiskSlot()
 {
     // Make this start at last found slot in future
-    ULONG64 currentSearchIndex = 0;
+    ULONG64 currentSearchIndex = 2;
+
     while (currentSearchIndex < NUMBER_OF_VIRTUAL_PAGES && freeDiskSpace[currentSearchIndex] == false)
     {
         currentSearchIndex++;
@@ -103,6 +98,12 @@ ULONG64 findFreeDiskSlot()
     {
         return -1;
     }
+
+    // #TODO bp: currently just setting this to in use, but it might actually not get used if not enough pages
+    freeDiskSpace[currentSearchIndex] = false;
+
+    // lastUsedFreeDiskSlot = currentSearchIndex;
+
     return freeDiskSpace[currentSearchIndex];
 }
 
