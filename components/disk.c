@@ -87,7 +87,7 @@ VOID swapToDisk()
 ULONG64 findFreeDiskSlot()
 {
     // Make this start at last found slot in future
-    ULONG64 currentSearchIndex = 2;
+    ULONG64 currentSearchIndex = 0;
 
     while (currentSearchIndex < NUMBER_OF_VIRTUAL_PAGES && freeDiskSpace[currentSearchIndex] == false)
     {
@@ -104,7 +104,7 @@ ULONG64 findFreeDiskSlot()
 
     // lastUsedFreeDiskSlot = currentSearchIndex;
 
-    return freeDiskSpace[currentSearchIndex];
+    return currentSearchIndex;
 }
 
 VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom)

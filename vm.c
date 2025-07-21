@@ -482,8 +482,6 @@ VOID full_virtual_memory_test (VOID)
                 frameNumber = currentPTE->transitionFormat.pageFrameNumber;
                 currentFrame = findFrameFromFrameNumber(frameNumber);
 
-                evictFrame(currentFrame);
-
                 // NEED TO REMOVE FROM MODIFIED LIST IF WE GRAB BACK
                 if (currentFrame->isOnModifiedList == 1)
                 {
@@ -505,6 +503,7 @@ VOID full_virtual_memory_test (VOID)
 
                 if (currentFrame == NULL) {
 
+                    // Check if we can get a frame from the standby list
                     if (standbyList != NULL)
                     {
                         currentFrame = popFirstFrame(&standbyList);
@@ -514,6 +513,7 @@ VOID full_virtual_memory_test (VOID)
                             return;
                         }
                     }
+                    // If we can't get any from standby list, evict an active page
                     else
                     {
                         // If we can't get any from standby list
