@@ -83,6 +83,7 @@ VOID modifiedPageWrite()
 {
     numAttemptedModWrites++;
 
+
     if (numAttemptedModWrites > 10)
     {
         numAttemptedModWrites = 0;
