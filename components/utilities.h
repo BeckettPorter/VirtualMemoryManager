@@ -64,12 +64,6 @@ typedef struct Frame
 } Frame;
 
 
-typedef struct ListEntry {
-    struct ListEntry* flink;
-    struct ListEntry* blink;
-} ListEntry;
-
-
 
 // Variables
 PageTableEntry* pageTable;
@@ -81,6 +75,7 @@ Frame* pfnArray;
 Frame* freeList;
 Frame* activeList;
 Frame* modifiedList;
+ULONG64 modifiedListLength;
 Frame* standbyList;
 
 // Functions
@@ -95,10 +90,6 @@ Frame* popFirstFrame(Frame** headPtr);
 VOID checkVa(PULONG64 va);
 
 boolean wipePage(Frame* frameToWipe);
-
-VOID addListEntry(ListEntry* head, ListEntry* entry);
-
-ListEntry* removeListEntry(ListEntry* entry);
 
 
 

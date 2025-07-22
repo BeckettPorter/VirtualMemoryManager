@@ -504,31 +504,25 @@ VOID full_virtual_memory_test (VOID)
                 if (currentFrame == NULL) {
 
                     // Check if we can get a frame from the standby list
-                    if (standbyList != NULL)
+                    if (standbyList == NULL)
                     {
-                        currentFrame = popFirstFrame(&standbyList);
-                        if (wipePage(currentFrame) == false)
-                        {
-                            printf("wipePage failed in full_virtual_memory_test\n");
-                            return;
-                        }
-                    }
-                    // If we can't get any from standby list, evict an active page
-                    else
-                    {
-                        // If we can't get any from standby list
-                        Frame *victim = evictFrame();
+                        // If we can't get any from the standby list
 
-                        // When do i actually want to call this??
+                        // Batch evict frames from the active list and add them to the modified list
+                        evictFrame();
+
                         modifiedPageWrite();
+                    }
+                    // Now we know the standby list is not empty, either because it wasn't empty
+                    // before or we just evicted frames and added them to it.
 
-                        currentFrame = victim;
+                    // So now we know we can get a frame from the standby list.
+                    currentFrame = popFirstFrame(&standbyList);
 
-                        if (wipePage(currentFrame) == false)
-                        {
-                            printf("wipePage failed in full_virtual_memory_test\n");
-                            return;
-                        }
+                    if (wipePage(currentFrame) == false)
+                    {
+                        printf("wipePage failed in full_virtual_memory_test\n");
+                        return;
                     }
 
                     PageTableEntry *victimPTE = currentFrame->PTE;
@@ -572,7 +566,6 @@ VOID full_virtual_memory_test (VOID)
                 return;
             }
 
-            // #TODO bp: commented this out because right now our VAs are failing...
             checkVa(arbitrary_va);
 
 

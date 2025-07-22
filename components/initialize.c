@@ -37,6 +37,7 @@ VOID initListsAndPFNs()
     freeList = NULL;
     activeList = NULL;
     modifiedList = NULL;
+    modifiedListLength = 0;
     standbyList = NULL;
 
     // For each physical page we have, commit the memory for it in the sparse arary.
