@@ -59,7 +59,7 @@ VOID evictFrame()
     }
 
     // unmap the old VA (batched)
-    if (MapUserPhysicalPages (evictVAs, numPagesToEvict, NULL) == FALSE) {
+    if (MapUserPhysicalPagesScatter (evictVAs, numPagesToEvict, NULL) == FALSE) {
 
         printf ("evictFrame : could not unmap %llu VAs at %p from their pages",
             numPagesToEvict, evictVAs);
