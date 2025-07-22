@@ -19,7 +19,6 @@ VOID swapToDisk()
     // list as I have free disk slots.
     ULONG64 numPagesToActuallySwap = 0;
 
-
     while (numPagesToActuallySwap < MAX_WRITE_PAGES)
     {
         ULONG64 currentFreeDiskSlot = findFreeDiskSlot();
@@ -38,7 +37,8 @@ VOID swapToDisk()
     for (ULONG64 i = 0; i < numPagesToActuallySwap; i++)
     {
         Frame* currentFrame = popFirstFrame(&modifiedList);
-        if (!currentFrame)
+        modifiedListLength--;
+        if (currentFrame == NULL)
         {
             numPagesToActuallySwap = i;
             break;  // If we don't have any more frames to swap, break out of the loop.
@@ -71,11 +71,13 @@ VOID swapToDisk()
         // Copy the contents of the VA to the disk space we are trying to write to.
         memcpy(totalDiskSpace + currentDiskSlot * PAGE_SIZE, copyVA, PAGE_SIZE);
 
-
         currentFrame->diskIndex = currentDiskSlot;
 
         currentFrame->PTE->transitionFormat.isTransitionFormat = 0;
     }
+
+    // Once we do batch write, we need to put them on the standby list
+    // Then try to go back around and retry page faulted instead of continuing assuming we got a page
 
     if (!MapUserPhysicalPages(transferVA, numPagesToActuallySwap, NULL)) {
         printf("swapToDisk: Failed to unmap user physical pages!");

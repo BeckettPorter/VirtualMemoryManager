@@ -68,7 +68,7 @@ Frame* removeFromFrameList(Frame* head, Frame* item) {
 
 // Pops the first Frame* from *headPtr, returns the popped frame (or NULL if empty).
 Frame* popFirstFrame(Frame** headPtr) {
-    if (!headPtr || !*headPtr) return NULL;
+    if (!*headPtr) return NULL;
     Frame* first = *headPtr;
     *headPtr = first->nextPFN;
     first->nextPFN = NULL;
@@ -109,27 +109,4 @@ boolean wipePage(Frame* frameToWipe)
     }
 
     return true;
-}
-
-
-VOID addListEntry(ListEntry* head, ListEntry* entry) {
-    // If the list is empty, add the entry to the head and tail.
-    if (head->flink == NULL)
-    {
-        head->flink = head;
-        head->blink = head;
-    }
-
-    entry->flink      = head;
-    entry->blink      = head->blink;
-    head->blink->flink = entry;
-    head->blink       = entry;
-}
-
-
-ListEntry* removeListEntry(ListEntry* entry) {
-    entry->blink->flink = entry->flink;
-    entry->flink->blink = entry->blink;
-    entry->flink = entry->blink = NULL;
-    return entry;
 }

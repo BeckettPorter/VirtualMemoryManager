@@ -24,71 +24,78 @@ Frame* getFreeFrame()
     return frame;
 }
 
-Frame* evictFrame()
+VOID evictFrame()
 {
-    // Return NULL if we don't have any active frames to evict
-    if (activeList == NULL)
+    Frame* evictFrames[MAX_WRITE_PAGES];
+    void* evictVAs[MAX_WRITE_PAGES];
+    ULONG64 numPagesToEvict = 0;
+
+    while (numPagesToEvict < MAX_WRITE_PAGES)
     {
-        return NULL;
+        // Break from the while loop if we don't have any active frames to evict
+        if (activeList == NULL)
+        {
+            break;
+        }
+
+        Frame* previousFrame = NULL;
+        Frame* currentFrame = activeList;
+
+        // Walk through our PFNs until we reach the end of the array, moving them back one spot because we removed one.
+        while (currentFrame->nextPFN != NULL) {
+            previousFrame = currentFrame;
+            currentFrame = currentFrame->nextPFN;
+        }
+
+        if (previousFrame == NULL) {
+            activeList = NULL;
+        } else {
+            previousFrame->nextPFN = NULL;
+        }
+
+        evictFrames[numPagesToEvict] = currentFrame;
+        evictVAs[numPagesToEvict] = PageTableEntryToVA(currentFrame->PTE);
+        numPagesToEvict++;
     }
 
-    Frame* previousFrame = NULL;
-    Frame* currentFrame = activeList;
+    // unmap the old VA (batched)
+    if (MapUserPhysicalPages (evictVAs, numPagesToEvict, NULL) == FALSE) {
 
-    // Walk through our PFNs until we reach the end of the array, moving them back one spot because we removed one.
-    while (currentFrame->nextPFN != NULL) {
-        previousFrame = currentFrame;
-        currentFrame = currentFrame->nextPFN;
-    }
-
-    if (previousFrame == NULL) {
-        activeList = NULL;
-    } else {
-        previousFrame->nextPFN = NULL;
-    }
-
-
-    // unmap the old VA -  this will need to batch in future bc very slow
-    if (MapUserPhysicalPages (PageTableEntryToVA(currentFrame->PTE), 1, NULL) == FALSE) {
-
-        printf ("evictFrame : could not unmap VA %p to page %llX\n", PageTableEntryToVA(currentFrame->PTE),
-            findFrameNumberFromFrame(currentFrame));
+        printf ("evictFrame : could not unmap %llu VAs at %p from their pages",
+            numPagesToEvict, evictVAs);
 
         DebugBreak();
     }
 
-    PageTableEntry* victimPTE = currentFrame->PTE;
+    for (ULONG64 i = 0; i < numPagesToEvict; i++)
+    {
+        Frame* currentFrameToFix = evictFrames[i];
 
-    PageTableEntry PTEContents = *victimPTE;
+        PageTableEntry* victimPTE = currentFrameToFix->PTE;
 
-    PTEContents.entireFormat = 0;
-    PTEContents.transitionFormat.isTransitionFormat = 1;
-    PTEContents.transitionFormat.mustBeZero = 0;
-    PTEContents.transitionFormat.pageFrameNumber = findFrameNumberFromFrame(currentFrame);
+        PageTableEntry PTEContents = *victimPTE;
 
-    findFrameFromFrameNumber(PTEContents.transitionFormat.pageFrameNumber)->diskIndex = 0;
+        PTEContents.entireFormat = 0;
+        PTEContents.transitionFormat.isTransitionFormat = 1;
+        PTEContents.transitionFormat.mustBeZero = 0;
+        PTEContents.transitionFormat.pageFrameNumber = findFrameNumberFromFrame(currentFrameToFix);
 
-    victimPTE->entireFormat = PTEContents.entireFormat;
+        findFrameFromFrameNumber(PTEContents.transitionFormat.pageFrameNumber)->diskIndex = 0;
 
-    // NEED TO ADD TO MODIFIED LIST
-    modifiedList = addToFrameList(modifiedList, currentFrame);
+        victimPTE->entireFormat = PTEContents.entireFormat;
 
-    // Set to be on modified list in frame.
-    currentFrame->isOnModifiedList = 1;
+        // NEED TO ADD TO MODIFIED LIST
+        modifiedList = addToFrameList(modifiedList, currentFrameToFix);
+        modifiedListLength++;
 
-    return currentFrame;
+        // Set to be on the modified list in the frame.
+        currentFrameToFix->isOnModifiedList = 1;
+    }
 }
 
 VOID modifiedPageWrite()
 {
-    numAttemptedModWrites++;
-
-
-    if (numAttemptedModWrites > 10)
-    {
-        numAttemptedModWrites = 0;
-        swapToDisk();
-    }
+    swapToDisk();
 }
 
 Frame* findFrameFromFrameNumber(ULONG64 frameNumber)

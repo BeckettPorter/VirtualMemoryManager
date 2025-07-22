@@ -11,7 +11,7 @@ Frame* getFreeFrame();
 
 VOID releaseFrame();
 
-Frame* evictFrame();
+VOID evictFrame();
 
 Frame* findFrameFromFrameNumber(ULONG64 frameNumber);
 
