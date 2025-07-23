@@ -89,24 +89,40 @@ checkVa(PULONG64 va) {
 boolean wipePage(Frame* frameToWipe)
 {
     ULONG64 frameNumberToWipe = findFrameNumberFromFrame(frameToWipe);
-    if (MapUserPhysicalPages (transferVA, 1, &frameNumberToWipe) == FALSE) {
 
-        printf ("wipePage : could not map transferVA %p to frame num %llX\n", transferVA,
+    PVOID transferVAToUse = acquireTransferVA();
+
+    if (MapUserPhysicalPages (transferVAToUse, 1, &frameNumberToWipe) == FALSE) {
+
+        printf ("wipePage : could not map transferVA %p to frame num %llX\n", transferVAToUse,
             frameNumberToWipe);
 
         DebugBreak();
-        return false;
     }
 
-    memset(transferVA, 0, PAGE_SIZE);
-
-    if (MapUserPhysicalPages (transferVA, 1, NULL) == FALSE) {
-
-        printf ("wipePage : could not unmap transferVA %p from frame num %llX\n", transferVA,
-            frameNumberToWipe);
-
-        return false;
-    }
+    memset(transferVAToUse, 0, PAGE_SIZE);
 
     return true;
+}
+
+PVOID acquireTransferVA()
+{
+    currentTransferVAIndex++;
+
+    if (currentTransferVAIndex == TRANSFER_VA_COUNT)
+    {
+        flushTransferVAs();
+        currentTransferVAIndex = 0;
+    }
+
+    return (PVOID) ((ULONG_PTR)transferVA + currentTransferVAIndex * PAGE_SIZE);
+}
+
+// Flush all of the transfer VA's that we have mapped.
+VOID flushTransferVAs()
+{
+    if (!MapUserPhysicalPages(transferVA, currentTransferVAIndex, NULL)) {
+        printf("flushTransferVAs: Failed to unmap transfer VA's!");
+        exit(-1);
+    }
 }

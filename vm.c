@@ -15,7 +15,7 @@
 // detect and fix unintended failures to unmap virtual addresses properly.
 //
 
-#define SUPPORT_MULTIPLE_VA_TO_SAME_PAGE 0
+#define SUPPORT_MULTIPLE_VA_TO_SAME_PAGE 1
 
 #pragma comment(lib, "advapi32.lib")
 
@@ -303,6 +303,9 @@ VOID full_virtual_memory_test (VOID)
     ULONG_PTR virtual_address_size;
     ULONG_PTR virtual_address_size_in_unsigned_chunks;
 
+    // Start our timer
+    startTime = GetTickCount64();
+
     //
     // Allocate the physical pages that we will be managing.
     //
@@ -378,22 +381,20 @@ VOID full_virtual_memory_test (VOID)
 
 #if SUPPORT_MULTIPLE_VA_TO_SAME_PAGE
 
-    MEM_EXTENDED_PARAMETER parameter = { 0 };
-
     //
     // Allocate a MEM_PHYSICAL region that is "connected" to the AWE section
     // created above.
     //
 
-    parameter.Type = MemExtendedParameterUserPhysicalHandle;
-    parameter.Handle = physical_page_handle;
+    sharablePhysicalPages.Type = MemExtendedParameterUserPhysicalHandle;
+    sharablePhysicalPages.Handle = physical_page_handle;
 
-    p = VirtualAlloc2 (NULL,
+    vaStartLoc = VirtualAlloc2 (NULL,
                        NULL,
                        virtual_address_size,
                        MEM_RESERVE | MEM_PHYSICAL,
                        PAGE_READWRITE,
-                       &parameter,
+                       &sharablePhysicalPages,
                        1);
 
 #else
@@ -421,7 +422,6 @@ VOID full_virtual_memory_test (VOID)
     initListsAndPFNs();
     initDiskSpace();
 
-    // while (true) {
     for (i = 0; i < MB (1); i += 1) {
 
         //
@@ -497,19 +497,22 @@ VOID full_virtual_memory_test (VOID)
                 }
             }
             else
-                // Else if we don't rescue
+                // Else if we don't rescue (either a fresh VA, or one that was trimmed and written to disk)
             {
+                boolean retrievedFromStandbyList = false;
                 currentFrame = getFreeFrame();
 
                 if (currentFrame == NULL) {
+                    retrievedFromStandbyList = true;
 
                     // Check if we can get a frame from the standby list
                     if (standbyList == NULL)
                     {
                         // If we can't get any from the standby list
-
                         // Batch evict frames from the active list and add them to the modified list
                         evictFrame();
+
+                        ASSERT(modifiedListLength != 0);
 
                         modifiedPageWrite();
                     }
@@ -519,10 +522,9 @@ VOID full_virtual_memory_test (VOID)
                     // So now we know we can get a frame from the standby list.
                     currentFrame = popFirstFrame(&standbyList);
 
-                    if (wipePage(currentFrame) == false)
+                    if (currentFrame == NULL)
                     {
-                        printf("wipePage failed in full_virtual_memory_test\n");
-                        return;
+                        DebugBreak();
                     }
 
                     PageTableEntry *victimPTE = currentFrame->PTE;
@@ -546,7 +548,16 @@ VOID full_virtual_memory_test (VOID)
                 // Now we have a page. Now we decide to swap from disk or not.
                 if (currentPTE->entireFormat == 0)
                 {
-                    // brand new PTE, nothing to read from disk (continue as usual)
+                    // Brand new PTE, nothing to read from disk (continue as usual)
+                    // We just need to wipe it to get rid of previous contents IF we got it from the standby list.
+                    if (retrievedFromStandbyList)
+                    {
+                        if (wipePage(currentFrame) == false)
+                        {
+                            printf("wipePage failed in full_virtual_memory_test\n");
+                            return;
+                        }
+                    }
                 }
                 else
                 {
@@ -605,6 +616,11 @@ VOID full_virtual_memory_test (VOID)
         }
     }
     printf ("full_virtual_memory_test : finished accessing %u random virtual addresses\n", i);
+
+
+    // End our timer and print the time taken for the program to run.
+    endTime = GetTickCount64();
+    printf ("full_virtual_memory_test : time taken %llums\n", endTime - startTime);
 
     //
     // Now that we're done with our memory we can be a good
