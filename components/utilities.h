@@ -13,6 +13,7 @@
 #define NUMBER_OF_PHYSICAL_PAGES   ((VIRTUAL_ADDRESS_SIZE / PAGE_SIZE) / 64)
 #define NUMBER_OF_VIRTUAL_PAGES (VIRTUAL_ADDRESS_SIZE / PAGE_SIZE)
 #define MAX_WRITE_PAGES 16
+#define TRANSFER_VA_COUNT 16
 
 #define ASSERT(x) if (!(x)) { DebugBreak(); }
 #include <windows.h>
@@ -52,7 +53,6 @@ typedef union
     ULONG64 entireFormat;
 } PageTableEntry;
 
-
 // Frame is on ram, PAGES are on ram, but then copied to disk when
 typedef struct Frame
 {
@@ -62,7 +62,6 @@ typedef struct Frame
     ULONG64 isOnModifiedList: 1;
     ULONG64 diskIndex: 40;
 } Frame;
-
 
 
 // Variables
@@ -78,6 +77,15 @@ Frame* modifiedList;
 ULONG64 modifiedListLength;
 Frame* standbyList;
 
+void* transferVA;
+ULONG64 currentTransferVAIndex;
+
+// Timer variables
+ULONG64 startTime;
+ULONG64 endTime;
+
+extern MEM_EXTENDED_PARAMETER sharablePhysicalPages;
+
 // Functions
 PageTableEntry* VAToPageTableEntry(void* virtualAddress);
 void* PageTableEntryToVA(PageTableEntry* entry);
@@ -91,6 +99,8 @@ VOID checkVa(PULONG64 va);
 
 boolean wipePage(Frame* frameToWipe);
 
+PVOID acquireTransferVA();
+VOID flushTransferVAs();
 
 
 #endif //UTILITIES_H

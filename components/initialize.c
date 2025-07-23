@@ -10,6 +10,8 @@
 #include "utilities.h"
 
 
+MEM_EXTENDED_PARAMETER sharablePhysicalPages = { 0 };
+
 VOID initListsAndPFNs()
 {
     ULONG64 numBytes = VIRTUAL_ADDRESS_SIZE / PAGE_SIZE * sizeof(PageTableEntry);
@@ -61,14 +63,18 @@ VOID initListsAndPFNs()
 
 VOID initDiskSpace()
 {
-    transferVA = VirtualAlloc (NULL,
-                      PAGE_SIZE * MAX_WRITE_PAGES,
-                      MEM_RESERVE | MEM_PHYSICAL,
-                      PAGE_READWRITE);
+    transferVA = VirtualAlloc2 (NULL,
+                       NULL,
+                       PAGE_SIZE * TRANSFER_VA_COUNT,
+                       MEM_RESERVE | MEM_PHYSICAL,
+                       PAGE_READWRITE,
+                       &sharablePhysicalPages,
+                       1);
 
+    // #TODO bp: this can be reduced
     totalDiskSpace = malloc(VIRTUAL_ADDRESS_SIZE);
     freeDiskSpace = malloc(NUMBER_OF_VIRTUAL_PAGES * sizeof(*freeDiskSpace));
-    lastUsedFreeDiskSlot = 0;
+    diskSearchStartIndex = 0;
 
     for (ULONG64 i = 0; i < NUMBER_OF_VIRTUAL_PAGES; i++)
     {
