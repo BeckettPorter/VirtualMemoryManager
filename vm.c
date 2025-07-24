@@ -422,8 +422,8 @@ VOID full_virtual_memory_test (VOID)
     initListsAndPFNs();
     initDiskSpace();
 
-    while (true) {
-    // for (i = 0; i < MB (1); i += 1) {
+    // while (true) {
+    for (i = 0; i < MB (1); i += 1) {
 
         //
         // Randomly access different portions of the virtual address
@@ -490,9 +490,11 @@ VOID full_virtual_memory_test (VOID)
                 }
                 else
                 {
+                    // If our current frame is not on the modified list, but it IS in transition,
+                    // we need to remove it from the standby list.
                     standbyList = removeFromFrameList(standbyList, currentFrame);
 
-                    ULONG64 diskIndex = findFrameFromFrameNumber(currentFrame)->diskIndex;
+                    ULONG64 diskIndex = currentFrame->diskIndex;
 
                     freeDiskSpace[diskIndex] = true;
                 }
@@ -537,11 +539,9 @@ VOID full_virtual_memory_test (VOID)
                     pteContents.invalidFormat.mustBeZero = 0;
                     pteContents.invalidFormat.isTransitionFormat = 0;
 
-                    pteContents.invalidFormat.diskIndex =
-                        findFrameFromFrameNumber(victimPTE->transitionFormat.pageFrameNumber)->diskIndex;
+                    pteContents.invalidFormat.diskIndex = currentFrame->diskIndex;
 
                     *victimPTE = pteContents;
-
                 }
 
                 frameNumber = findFrameNumberFromFrame(currentFrame);
@@ -549,7 +549,7 @@ VOID full_virtual_memory_test (VOID)
                 // Now we have a page. Now we decide to swap from disk or not.
                 if (currentPTE->entireFormat == 0)
                 {
-                    // Brand new PTE, nothing to read from disk (continue as usual)
+                    // In this case we have a brand new PTE, nothing to read from disk (continue as usual)
                     // We just need to wipe it to get rid of previous contents IF we got it from the standby list.
                     if (retrievedFromStandbyList)
                     {
@@ -562,7 +562,7 @@ VOID full_virtual_memory_test (VOID)
                 }
                 else
                 {
-                    // else we are on disk
+                    // Else we are on disk, so we need to swap from disk.
                     ULONG64 diskIndex = currentPTE->invalidFormat.diskIndex;
 
                     swapFromDisk(currentFrame, diskIndex);
@@ -583,6 +583,7 @@ VOID full_virtual_memory_test (VOID)
 
             // Fill in fields for PTE (valid bit, page frame number)
             currentPTE->validFormat.isValid = 1;
+            currentPTE->validFormat.isTransitionFormat = 0;
             currentPTE->validFormat.pageFrameNumber = findFrameNumberFromFrame(currentFrame);
 
             currentFrame->PTE = currentPTE;

@@ -14,9 +14,12 @@ MEM_EXTENDED_PARAMETER sharablePhysicalPages = { 0 };
 
 VOID initListsAndPFNs()
 {
-    ULONG64 numBytes = VIRTUAL_ADDRESS_SIZE / PAGE_SIZE * sizeof(PageTableEntry);
+    ULONG64 numBytes = NUMBER_OF_VIRTUAL_PAGES * sizeof(PageTableEntry);
 
     pageTable = malloc(numBytes);
+
+    ASSERT(pageTable);
+
     memset(pageTable, 0, numBytes);
 
     // Find the highest PFN in the PFN array.
@@ -73,10 +76,10 @@ VOID initDiskSpace()
 
     // #TODO bp: this can be reduced
     totalDiskSpace = malloc(VIRTUAL_ADDRESS_SIZE);
-    freeDiskSpace = malloc(NUMBER_OF_VIRTUAL_PAGES * sizeof(*freeDiskSpace));
+    freeDiskSpace = malloc(NUMBER_OF_DISK_SLOTS * sizeof(boolean));
     diskSearchStartIndex = 0;
 
-    for (ULONG64 i = 0; i < NUMBER_OF_VIRTUAL_PAGES; i++)
+    for (ULONG64 i = 0; i < NUMBER_OF_DISK_SLOTS; i++)
     {
         freeDiskSpace[i] = TRUE;
     }
