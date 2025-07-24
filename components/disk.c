@@ -23,6 +23,7 @@ VOID swapToDisk()
     {
         ULONG64 currentFreeDiskSlot = findFreeDiskSlot();
 
+        // If we don't have any free disk slots, break out of the loop.
         if (currentFreeDiskSlot == -1)
         {
             break;
@@ -73,8 +74,6 @@ VOID swapToDisk()
 
         currentFrame->diskIndex = currentDiskSlot;
 
-        currentFrame->PTE->transitionFormat.isTransitionFormat = 0;
-
         standbyList = addToFrameList(standbyList, currentFrame);
 
         // Set the disk space we just copied to false to set it as occupied.
@@ -100,7 +99,7 @@ ULONG64 findFreeDiskSlot()
             diskSearchStartIndex = currentSearchIndex + 1;
 
             // Wrap our search index around if we go past the end of the array.
-            if (diskSearchStartIndex == NUMBER_OF_VIRTUAL_PAGES)
+            if (diskSearchStartIndex >= NUMBER_OF_VIRTUAL_PAGES)
             {
                 diskSearchStartIndex = 0;
             }
@@ -110,7 +109,7 @@ ULONG64 findFreeDiskSlot()
         currentSearchIndex++;
 
         // Wrap our current search index around if we go past the end of the array.
-        if (currentSearchIndex == NUMBER_OF_VIRTUAL_PAGES)
+        if (currentSearchIndex >= NUMBER_OF_VIRTUAL_PAGES)
         {
             currentSearchIndex = 0;
         }

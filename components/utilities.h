@@ -14,6 +14,7 @@
 #define NUMBER_OF_VIRTUAL_PAGES (VIRTUAL_ADDRESS_SIZE / PAGE_SIZE)
 #define MAX_WRITE_PAGES 16
 #define TRANSFER_VA_COUNT 16
+#define NUMBER_OF_DISK_SLOTS 4096
 
 #define ASSERT(x) if (!(x)) { DebugBreak(); }
 #include <windows.h>
