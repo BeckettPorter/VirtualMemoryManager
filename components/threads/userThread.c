@@ -115,11 +115,16 @@ ULONG userThread(_In_ PVOID Context)
                     {
                         // If we can't get any from the standby list
                         // Batch evict frames from the active list and add them to the modified list
+
+                        // TODO bp: this will set event and trimmer thread will have this code.
                         evictFrame();
 
                         ASSERT(modifiedListLength != 0);
 
+                        // TODO bp: the trimmer will set an event for this and DISK thread will have this code.
                         modifiedPageWrite();
+
+                        // #TODO bp: Right here, I need to wait for modified page write to be done writing to disk.
                     }
                     // Now we know the standby list is not empty, either because it wasn't empty
                     // before or we just evicted frames and added them to it.
