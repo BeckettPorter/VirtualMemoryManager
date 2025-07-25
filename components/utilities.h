@@ -16,6 +16,27 @@
 #define TRANSFER_VA_COUNT 16
 #define NUMBER_OF_DISK_SLOTS 4096
 
+// Threads
+#define AUTO_RESET              FALSE
+#define MANUAL_RESET            TRUE
+#define WAIT_FOR_ALL            TRUE
+#define WAIT_FOR_ONE            FALSE
+#define DEFAULT_SECURITY        ((LPSECURITY_ATTRIBUTES) NULL)
+#define DEFAULT_STACK_SIZE      0
+#define DEFAULT_CREATION_FLAGS  0
+#define EVENT_START_ON          TRUE
+#define EVENT_START_OFF         FALSE
+
+#define NUMBER_USER_THREADS 1
+#define NUMBER_TRIM_THREADS 0
+#define NUMBER_DISK_THREADS 0
+#define TOTAL_NUMBER_OF_THREADS (NUMBER_USER_THREADS + NUMBER_TRIM_THREADS + NUMBER_DISK_THREADS)
+
+// Thread types
+#define USER_THREAD 0
+#define TRIM_THREAD 1
+#define DISK_THREAD 2
+
 #define ASSERT(x) if (!(x)) { DebugBreak(); }
 #include <windows.h>
 
@@ -65,6 +86,27 @@ typedef struct Frame
 } Frame;
 
 
+typedef struct _THREAD_INFO {
+
+    ULONG ThreadNumber;
+
+    ULONG ThreadId;
+    HANDLE ThreadHandle;
+
+    ULONG ThreadType;
+
+#if 0
+
+    //
+    // What effect would consuming extra space here have ?
+    //
+
+    volatile UCHAR Pad[32];
+
+#endif
+
+} THREAD_INFO, *PTHREAD_INFO;
+
 // Variables
 PageTableEntry* pageTable;
 void* vaStartLoc;
@@ -86,6 +128,12 @@ ULONG64 startTime;
 ULONG64 endTime;
 
 extern MEM_EXTENDED_PARAMETER sharablePhysicalPages;
+
+// Thread variables
+THREAD_INFO threadInfoArray[TOTAL_NUMBER_OF_THREADS];
+
+
+
 
 // Functions
 PageTableEntry* VAToPageTableEntry(void* virtualAddress);

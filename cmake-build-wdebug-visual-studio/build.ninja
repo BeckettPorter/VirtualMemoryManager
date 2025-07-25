@@ -84,6 +84,27 @@ build CMakeFiles\VirtualMemoryManager.dir\components\disk.c.obj: C_COMPILER__Vir
   TARGET_COMPILE_PDB = CMakeFiles\VirtualMemoryManager.dir\
   TARGET_PDB = VirtualMemoryManager.pdb
 
+build CMakeFiles\VirtualMemoryManager.dir\components\threads\userThread.c.obj: C_COMPILER__VirtualMemoryManager_unscanned_Debug C$:\Users\porte\CLionProjects\VirtualMemoryManager\components\threads\userThread.c || cmake_object_order_depends_target_VirtualMemoryManager
+  FLAGS = /DWIN32 /D_WINDOWS /Ob0 /Od /RTC1 -std:c11 -MDd -Zi
+  OBJECT_DIR = CMakeFiles\VirtualMemoryManager.dir
+  OBJECT_FILE_DIR = CMakeFiles\VirtualMemoryManager.dir\components\threads
+  TARGET_COMPILE_PDB = CMakeFiles\VirtualMemoryManager.dir\
+  TARGET_PDB = VirtualMemoryManager.pdb
+
+build CMakeFiles\VirtualMemoryManager.dir\components\threads\diskThread.c.obj: C_COMPILER__VirtualMemoryManager_unscanned_Debug C$:\Users\porte\CLionProjects\VirtualMemoryManager\components\threads\diskThread.c || cmake_object_order_depends_target_VirtualMemoryManager
+  FLAGS = /DWIN32 /D_WINDOWS /Ob0 /Od /RTC1 -std:c11 -MDd -Zi
+  OBJECT_DIR = CMakeFiles\VirtualMemoryManager.dir
+  OBJECT_FILE_DIR = CMakeFiles\VirtualMemoryManager.dir\components\threads
+  TARGET_COMPILE_PDB = CMakeFiles\VirtualMemoryManager.dir\
+  TARGET_PDB = VirtualMemoryManager.pdb
+
+build CMakeFiles\VirtualMemoryManager.dir\components\threads\trimThread.c.obj: C_COMPILER__VirtualMemoryManager_unscanned_Debug C$:\Users\porte\CLionProjects\VirtualMemoryManager\components\threads\trimThread.c || cmake_object_order_depends_target_VirtualMemoryManager
+  FLAGS = /DWIN32 /D_WINDOWS /Ob0 /Od /RTC1 -std:c11 -MDd -Zi
+  OBJECT_DIR = CMakeFiles\VirtualMemoryManager.dir
+  OBJECT_FILE_DIR = CMakeFiles\VirtualMemoryManager.dir\components\threads
+  TARGET_COMPILE_PDB = CMakeFiles\VirtualMemoryManager.dir\
+  TARGET_PDB = VirtualMemoryManager.pdb
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target VirtualMemoryManager
@@ -92,7 +113,7 @@ build CMakeFiles\VirtualMemoryManager.dir\components\disk.c.obj: C_COMPILER__Vir
 #############################################
 # Link the executable VirtualMemoryManager.exe
 
-build VirtualMemoryManager.exe: C_EXECUTABLE_LINKER__VirtualMemoryManager_Debug CMakeFiles\VirtualMemoryManager.dir\vm.c.obj CMakeFiles\VirtualMemoryManager.dir\components\utilities.c.obj CMakeFiles\VirtualMemoryManager.dir\components\initialize.c.obj CMakeFiles\VirtualMemoryManager.dir\components\pages.c.obj CMakeFiles\VirtualMemoryManager.dir\components\disk.c.obj
+build VirtualMemoryManager.exe: C_EXECUTABLE_LINKER__VirtualMemoryManager_Debug CMakeFiles\VirtualMemoryManager.dir\vm.c.obj CMakeFiles\VirtualMemoryManager.dir\components\utilities.c.obj CMakeFiles\VirtualMemoryManager.dir\components\initialize.c.obj CMakeFiles\VirtualMemoryManager.dir\components\pages.c.obj CMakeFiles\VirtualMemoryManager.dir\components\disk.c.obj CMakeFiles\VirtualMemoryManager.dir\components\threads\userThread.c.obj CMakeFiles\VirtualMemoryManager.dir\components\threads\diskThread.c.obj CMakeFiles\VirtualMemoryManager.dir\components\threads\trimThread.c.obj
   FLAGS = /DWIN32 /D_WINDOWS /Ob0 /Od /RTC1 -MDd -Zi
   LINK_FLAGS = /machine:x64 /debug /INCREMENTAL /subsystem:console
   LINK_LIBRARIES = kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib

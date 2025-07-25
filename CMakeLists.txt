@@ -13,4 +13,10 @@ add_executable(VirtualMemoryManager vm.c
         components/pages.c
         components/pages.h
         components/disk.c
-        components/disk.h)
+        components/disk.h
+        components/threads/userThread.c
+        components/threads/userThread.h
+        components/threads/diskThread.c
+        components/threads/diskThread.h
+        components/threads/trimThread.c
+        components/threads/trimThread.h)

@@ -11,5 +11,14 @@ VOID initListsAndPFNs();
 
 VOID initDiskSpace();
 
+VOID initThreads();
+
+VOID createEvents();
+VOID initCriticalSections();
+VOID createThreads();
+
+HANDLE createNewThread(LPTHREAD_START_ROUTINE ThreadFunction, PTHREAD_INFO ThreadContext);
+
+HANDLE threadFinishedEvents[TOTAL_NUMBER_OF_THREADS];
 
 #endif //INITIALIZE_H

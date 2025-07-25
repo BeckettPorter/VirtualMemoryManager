@@ -8,6 +8,7 @@
 
 #include "disk.h"
 #include "utilities.h"
+#include "threads/userThread.h"
 
 
 MEM_EXTENDED_PARAMETER sharablePhysicalPages = { 0 };
@@ -85,4 +86,82 @@ VOID initDiskSpace()
     }
 
     numAttemptedModWrites = 0;
+}
+
+
+VOID initThreads()
+{
+    createEvents();
+    initCriticalSections();
+    createThreads();
+
+}
+
+VOID createEvents()
+{
+
+}
+
+VOID initCriticalSections()
+{
+
+}
+
+VOID createThreads()
+{
+    ULONG64 currentThreadNumber = 0;
+
+    PTHREAD_INFO currentThreadInfo;
+
+
+    // Create the user threads.
+    for (ULONG64 i = 0; i < NUMBER_USER_THREADS; i++)
+    {
+        currentThreadInfo = &threadInfoArray[currentThreadNumber];
+        currentThreadInfo->ThreadId = currentThreadNumber;
+
+        currentThreadInfo->ThreadHandle = createNewThread(userThread, currentThreadInfo);
+
+
+        currentThreadNumber++;
+    }
+
+    // Create the trim threads.
+    for (ULONG64 i = 0; i < NUMBER_TRIM_THREADS; i++)
+    {
+
+    }
+
+    // Create the disk threads.
+    for (ULONG64 i = 0; i < NUMBER_DISK_THREADS; i++)
+    {
+
+    }
+
+
+}
+
+
+
+
+
+HANDLE createNewThread(LPTHREAD_START_ROUTINE ThreadFunction, PTHREAD_INFO ThreadContext)
+{
+    HANDLE Handle;
+    BOOL ReturnValue;
+
+    Handle = CreateThread(DEFAULT_SECURITY,
+                           DEFAULT_STACK_SIZE,
+                           ThreadFunction,
+                           ThreadContext,
+                           DEFAULT_CREATION_FLAGS,
+                           &ThreadContext->ThreadId);
+
+    if (Handle == NULL) {
+        ReturnValue = GetLastError ();
+        printf ("could not create thread %x\n", ReturnValue);
+        return NULL;
+    }
+
+    return Handle;
 }
