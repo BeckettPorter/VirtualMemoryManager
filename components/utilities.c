@@ -126,3 +126,14 @@ VOID flushTransferVAs()
         exit(-1);
     }
 }
+
+VOID shutdownUserThread(int userThreadIndex)
+{
+    numActiveUserThreads--;
+    if (numActiveUserThreads == 0)
+    {
+        SetEvent(shutdownProgramEvent);
+        printf ("full_virtual_memory_test : finished accessing random virtual addresses\n");
+
+    }
+}

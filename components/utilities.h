@@ -134,6 +134,8 @@ extern MEM_EXTENDED_PARAMETER sharablePhysicalPages;
 // Thread variables
 THREAD_INFO threadInfoArray[TOTAL_NUMBER_OF_THREADS];
 
+HANDLE userThreadHandles[NUMBER_USER_THREADS];
+
 
 // Thread events
 HANDLE trimEvent;
@@ -143,7 +145,7 @@ HANDLE finishedModWriteEvent;
 
 HANDLE shutdownProgramEvent;
 
-
+ULONG64 numActiveUserThreads;
 
 // Functions
 PageTableEntry* VAToPageTableEntry(void* virtualAddress);
@@ -161,5 +163,6 @@ boolean wipePage(Frame* frameToWipe);
 PVOID acquireTransferVA();
 VOID flushTransferVAs();
 
+VOID shutdownUserThread(int userThreadIndex);
 
 #endif //UTILITIES_H
