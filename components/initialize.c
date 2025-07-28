@@ -8,6 +8,8 @@
 
 #include "disk.h"
 #include "utilities.h"
+#include "threads/diskThread.h"
+#include "threads/trimThread.h"
 #include "threads/userThread.h"
 
 
@@ -99,7 +101,13 @@ VOID initThreads()
 
 VOID createEvents()
 {
+    // Create the event that will be used to signal the user threads to exit.
+    trimEvent = CreateEvent (NULL, AUTO_RESET, EVENT_START_OFF, NULL);
+    stopTrimmingEvent = CreateEvent (NULL, AUTO_RESET, EVENT_START_OFF, NULL);
+    modWriteEvent = CreateEvent (NULL, AUTO_RESET, EVENT_START_OFF, NULL);
+    finishedModWriteEvent = CreateEvent (NULL, AUTO_RESET, EVENT_START_OFF, NULL);
 
+    shutdownProgramEvent = CreateEvent (NULL, MANUAL_RESET, EVENT_START_OFF, NULL);
 }
 
 VOID initCriticalSections()
@@ -129,16 +137,24 @@ VOID createThreads()
     // Create the trim threads.
     for (ULONG64 i = 0; i < NUMBER_TRIM_THREADS; i++)
     {
+        currentThreadInfo = &threadInfoArray[currentThreadNumber];
+        currentThreadInfo->ThreadId = currentThreadNumber;
 
+        currentThreadInfo->ThreadHandle = createNewThread(trimThread, currentThreadInfo);
+
+        currentThreadNumber++;
     }
 
     // Create the disk threads.
     for (ULONG64 i = 0; i < NUMBER_DISK_THREADS; i++)
     {
+        currentThreadInfo = &threadInfoArray[currentThreadNumber];
+        currentThreadInfo->ThreadId = currentThreadNumber;
 
+        currentThreadInfo->ThreadHandle = createNewThread(diskThread, currentThreadInfo);
+
+        currentThreadNumber++;
     }
-
-
 }
 
 
