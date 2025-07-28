@@ -97,6 +97,9 @@ VOID initThreads()
     initCriticalSections();
     createThreads();
 
+
+    WaitForSingleObject (shutdownProgramEvent, INFINITE);
+
 }
 
 VOID createEvents()
@@ -123,6 +126,7 @@ VOID createThreads()
 
 
     // Create the user threads.
+    numActiveUserThreads = 0;
     for (ULONG64 i = 0; i < NUMBER_USER_THREADS; i++)
     {
         currentThreadInfo = &threadInfoArray[currentThreadNumber];
@@ -130,6 +134,9 @@ VOID createThreads()
 
         currentThreadInfo->ThreadHandle = createNewThread(userThread, currentThreadInfo);
 
+        userThreadHandles[i] = currentThreadInfo->ThreadHandle;
+
+        numActiveUserThreads++;
 
         currentThreadNumber++;
     }

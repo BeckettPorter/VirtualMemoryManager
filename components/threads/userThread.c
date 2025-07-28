@@ -205,9 +205,6 @@ ULONG userThread(_In_ PVOID Context)
         }
     }
 
-    printf ("full_virtual_memory_test : finished accessing random virtual addresses\n");
-
-    SetEvent(shutdownProgramEvent);
-
+    shutdownUserThread(((PTHREAD_INFO) Context)->ThreadNumber);
     return 0;
 }
