@@ -38,12 +38,15 @@ VOID swapToDisk()
     for (ULONG64 i = 0; i < numPagesToActuallySwap; i++)
     {
         Frame* currentFrame = popFirstFrame(&modifiedList);
-        modifiedListLength--;
+
         if (currentFrame == NULL)
         {
             numPagesToActuallySwap = i;
             break;  // If we don't have any more frames to swap, break out of the loop.
         }
+
+        modifiedListLength--;
+
         swapFrameNumbers[i] = findFrameNumberFromFrame(currentFrame);
 
         // Then set this frame to not be on the modified list anymore.
