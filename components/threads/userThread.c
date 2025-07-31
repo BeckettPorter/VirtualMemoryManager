@@ -88,13 +88,17 @@ ULONG userThread(_In_ PVOID Context)
                 // NEED TO REMOVE FROM MODIFIED LIST IF WE GRAB BACK
                 if (currentFrame->isOnModifiedList == 1)
                 {
+                    EnterCriticalSection(&modifiedListLock);
                     modifiedList = removeFromFrameList(modifiedList, currentFrame);
+                    LeaveCriticalSection(&modifiedListLock);
                 }
                 else
                 {
                     // If our current frame is not on the modified list, but it IS in transition,
                     // we need to remove it from the standby list.
+                    EnterCriticalSection(&standbyListLock);
                     standbyList = removeFromFrameList(standbyList, currentFrame);
+                    LeaveCriticalSection(&standbyListLock);
 
                     ULONG64 diskIndex = currentFrame->diskIndex;
 
@@ -127,7 +131,9 @@ ULONG userThread(_In_ PVOID Context)
                     // before or we just evicted frames and added them to it.
 
                     // So now we know we can get a frame from the standby list.
+                    EnterCriticalSection(&standbyListLock);
                     currentFrame = popFirstFrame(&standbyList);
+                    LeaveCriticalSection(&standbyListLock);
 
                     if (currentFrame == NULL)
                     {
@@ -193,7 +199,9 @@ ULONG userThread(_In_ PVOID Context)
             currentFrame->PTE = currentPTE;
 
             // Add to active list
+            EnterCriticalSection(&activeListLock);
             activeList = addToFrameList(activeList, currentFrame);
+            LeaveCriticalSection(&activeListLock);
 
             //
             // No exception handler needed now since we have connected

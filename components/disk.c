@@ -37,15 +37,19 @@ VOID swapToDisk()
 
     for (ULONG64 i = 0; i < numPagesToActuallySwap; i++)
     {
+        EnterCriticalSection(&modifiedListLock);
         Frame* currentFrame = popFirstFrame(&modifiedList);
 
         if (currentFrame == NULL)
         {
+            LeaveCriticalSection(&modifiedListLock);
             numPagesToActuallySwap = i;
             break;  // If we don't have any more frames to swap, break out of the loop.
         }
 
+
         modifiedListLength--;
+        LeaveCriticalSection(&modifiedListLock);
 
         swapFrameNumbers[i] = findFrameNumberFromFrame(currentFrame);
 
@@ -77,10 +81,14 @@ VOID swapToDisk()
 
         currentFrame->diskIndex = currentDiskSlot;
 
+        EnterCriticalSection(&standbyListLock);
         standbyList = addToFrameList(standbyList, currentFrame);
+        LeaveCriticalSection(&standbyListLock);
 
         // Set the disk space we just copied to false to set it as occupied.
+        EnterCriticalSection(&diskSpaceLock);
         freeDiskSpace[currentDiskSlot] = false;
+        LeaveCriticalSection(&diskSpaceLock);
     }
 
     if (!MapUserPhysicalPages(transferVA, numPagesToActuallySwap, NULL)) {
@@ -92,6 +100,8 @@ VOID swapToDisk()
 // DECLSPEC_NOINLINE
 ULONG64 findFreeDiskSlot()
 {
+    EnterCriticalSection(&diskSpaceLock);
+
     // Make this start at last found slot.
     ULONG64 currentSearchIndex = diskSearchStartIndex;
 
@@ -107,6 +117,7 @@ ULONG64 findFreeDiskSlot()
                 diskSearchStartIndex = 0;
             }
 
+            LeaveCriticalSection(&diskSpaceLock);
             return currentSearchIndex;
         }
         currentSearchIndex++;
@@ -118,6 +129,7 @@ ULONG64 findFreeDiskSlot()
         }
     }
 
+    LeaveCriticalSection(&diskSpaceLock);
     // Return -1 if we couldn't find any free disk slots.
     return -1;
 }
@@ -138,12 +150,15 @@ VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom)
 
     // If the slot in disk space we are trying to fill from is not already in use, debug break
     // because the contents should be there.
+    EnterCriticalSection(&diskSpaceLock);
     if (freeDiskSpace[diskIndexToTransferFrom] == true)
     {
         DebugBreak();
     }
 
-    memcpy(transferVAToUse, totalDiskSpace + diskIndexToTransferFrom * PAGE_SIZE, PAGE_SIZE);
     // Set the disk space we just copied from to true to clear it from being used.
     freeDiskSpace[diskIndexToTransferFrom] = true;
+    LeaveCriticalSection(&diskSpaceLock);
+
+    memcpy(transferVAToUse, totalDiskSpace + diskIndexToTransferFrom * PAGE_SIZE, PAGE_SIZE);
 }
