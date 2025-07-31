@@ -34,14 +34,18 @@ void* PageTableEntryToVA(PageTableEntry* entry)
 
 // Returns the new head of the list.
 Frame* addToFrameList(Frame* head, Frame* item) {
+
     if (!item) return head;
     item->nextPFN = head;
+
+
     return item;
 }
 
 // Removes `item` from the list `head` (if present).
 // Returns the new head of the list.
 Frame* removeFromFrameList(Frame* head, Frame* item) {
+
     if (!head || !item) return head;
 
     // If the item to remove is the head, pop it off.
@@ -63,15 +67,19 @@ Frame* removeFromFrameList(Frame* head, Frame* item) {
         prev = cur;
         cur  = cur->nextPFN;
     }
+
+
     return head;
 }
 
 // Pops the first Frame* from *headPtr, returns the popped frame (or NULL if empty).
 Frame* popFirstFrame(Frame** headPtr) {
+
     if (!*headPtr) return NULL;
     Frame* first = *headPtr;
     *headPtr = first->nextPFN;
     first->nextPFN = NULL;
+
     return first;
 }
 
@@ -107,15 +115,20 @@ boolean wipePage(Frame* frameToWipe)
 
 PVOID acquireTransferVA()
 {
-    currentTransferVAIndex++;
+    EnterCriticalSection(&transferVALock);
 
+    currentTransferVAIndex++;
     if (currentTransferVAIndex == TRANSFER_VA_COUNT)
     {
         flushTransferVAs();
         currentTransferVAIndex = 0;
     }
 
-    return (PVOID) ((ULONG_PTR)transferVA + currentTransferVAIndex * PAGE_SIZE);
+    PVOID result = (PVOID) ((ULONG_PTR)transferVA + currentTransferVAIndex * PAGE_SIZE);
+
+    LeaveCriticalSection(&transferVALock);
+
+    return result;
 }
 
 // Flush all of the transfer VA's that we have mapped.
@@ -129,6 +142,7 @@ VOID flushTransferVAs()
 
 VOID shutdownUserThread(int userThreadIndex)
 {
+    EnterCriticalSection(&threadCountLock);
     numActiveUserThreads--;
     if (numActiveUserThreads == 0)
     {
@@ -136,4 +150,5 @@ VOID shutdownUserThread(int userThreadIndex)
         printf ("full_virtual_memory_test : finished accessing random virtual addresses\n");
 
     }
+    LeaveCriticalSection(&threadCountLock);
 }

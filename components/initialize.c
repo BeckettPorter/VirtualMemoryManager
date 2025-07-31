@@ -69,6 +69,8 @@ VOID initListsAndPFNs()
 
 VOID initDiskSpace()
 {
+    currentTransferVAIndex = 0;
+
     transferVA = VirtualAlloc2 (NULL,
                        NULL,
                        PAGE_SIZE * TRANSFER_VA_COUNT,
@@ -115,7 +117,13 @@ VOID createEvents()
 
 VOID initCriticalSections()
 {
-
+    InitializeCriticalSection (&transferVALock);
+    InitializeCriticalSection (&freeListLock);
+    InitializeCriticalSection (&activeListLock);
+    InitializeCriticalSection (&modifiedListLock);
+    InitializeCriticalSection (&standbyListLock);
+    InitializeCriticalSection (&diskSpaceLock);
+    InitializeCriticalSection (&threadCountLock);
 }
 
 VOID createThreads()

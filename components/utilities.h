@@ -147,6 +147,19 @@ HANDLE shutdownProgramEvent;
 
 ULONG64 numActiveUserThreads;
 
+
+// Locks
+CRITICAL_SECTION transferVALock;
+
+CRITICAL_SECTION freeListLock;
+CRITICAL_SECTION activeListLock;
+CRITICAL_SECTION modifiedListLock;
+CRITICAL_SECTION standbyListLock;
+CRITICAL_SECTION diskSpaceLock;
+CRITICAL_SECTION threadCountLock;
+
+
+
 // Functions
 PageTableEntry* VAToPageTableEntry(void* virtualAddress);
 void* PageTableEntryToVA(PageTableEntry* entry);
