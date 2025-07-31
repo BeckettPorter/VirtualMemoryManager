@@ -47,14 +47,14 @@ VOID swapToDisk()
             break;  // If we don't have any more frames to swap, break out of the loop.
         }
 
-
         modifiedListLength--;
-        LeaveCriticalSection(&modifiedListLock);
-
-        swapFrameNumbers[i] = findFrameNumberFromFrame(currentFrame);
 
         // Then set this frame to not be on the modified list anymore.
         currentFrame->isOnModifiedList = 0;
+
+        LeaveCriticalSection(&modifiedListLock);
+
+        swapFrameNumbers[i] = findFrameNumberFromFrame(currentFrame);
     }
 
     ASSERT(numPagesToActuallySwap != 0);

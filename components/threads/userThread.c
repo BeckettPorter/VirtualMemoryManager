@@ -22,8 +22,8 @@ ULONG userThread(_In_ PVOID Context)
     ULONG_PTR virtual_address_size;
 
 
-    for (ULONG64 i = 0; i < MB (1); i += 1) {
-
+    for (ULONG64 i = 0; i < MB (1); i += 1)
+    {
         //
         // Randomly access different portions of the virtual address
         // space we obtained above.
@@ -68,6 +68,9 @@ ULONG userThread(_In_ PVOID Context)
         ULONG64 frameNumber;
         Frame* currentFrame;
 
+        CRITICAL_SECTION* PTELock = GetPTELock(currentPTE);
+        EnterCriticalSection(PTELock);
+
         __try {
 
             *arbitrary_va = (ULONG_PTR) arbitrary_va;
@@ -79,10 +82,15 @@ ULONG userThread(_In_ PVOID Context)
 
         if (page_faulted)
         {
+            // Read the PTE contents while we have the lock
+            PageTableEntry pteContents = *currentPTE;
+
+            LeaveCriticalSection(PTELock);
+
             // Else, 2 possibilities, could be in transition (transition bit 1) or not
-            if (currentPTE->transitionFormat.isTransitionFormat == 1)
+            if (pteContents.transitionFormat.isTransitionFormat == 1)
             {
-                frameNumber = currentPTE->transitionFormat.pageFrameNumber;
+                frameNumber = pteContents.transitionFormat.pageFrameNumber;
                 currentFrame = findFrameFromFrameNumber(frameNumber);
 
                 // NEED TO REMOVE FROM MODIFIED LIST IF WE GRAB BACK
@@ -90,6 +98,7 @@ ULONG userThread(_In_ PVOID Context)
                 {
                     EnterCriticalSection(&modifiedListLock);
                     modifiedList = removeFromFrameList(modifiedList, currentFrame);
+                    currentFrame->isOnModifiedList = 0;
                     LeaveCriticalSection(&modifiedListLock);
                 }
                 else
@@ -98,11 +107,14 @@ ULONG userThread(_In_ PVOID Context)
                     // we need to remove it from the standby list.
                     EnterCriticalSection(&standbyListLock);
                     standbyList = removeFromFrameList(standbyList, currentFrame);
+                    ULONG64 diskIndex = currentFrame->diskIndex;
                     LeaveCriticalSection(&standbyListLock);
 
-                    ULONG64 diskIndex = currentFrame->diskIndex;
 
+
+                    EnterCriticalSection(&diskSpaceLock);
                     freeDiskSpace[diskIndex] = true;
+                    LeaveCriticalSection(&diskSpaceLock);
                 }
             }
             else
@@ -142,22 +154,27 @@ ULONG userThread(_In_ PVOID Context)
 
                     PageTableEntry *victimPTE = currentFrame->PTE;
 
+                    CRITICAL_SECTION* victimPTELock = GetPTELock(victimPTE);
+                    EnterCriticalSection(victimPTELock);
+
                     // Victim PTE is in transition format, need to turn to invalid disk format
-                    PageTableEntry pteContents;
+                    PageTableEntry victimPteContents;
 
-                    pteContents.entireFormat = 0;
-                    pteContents.invalidFormat.mustBeZero = 0;
-                    pteContents.invalidFormat.isTransitionFormat = 0;
+                    victimPteContents.entireFormat = 0;
+                    victimPteContents.invalidFormat.mustBeZero = 0;
+                    victimPteContents.invalidFormat.isTransitionFormat = 0;
 
-                    pteContents.invalidFormat.diskIndex = currentFrame->diskIndex;
+                    victimPteContents.invalidFormat.diskIndex = currentFrame->diskIndex;
 
-                    *victimPTE = pteContents;
+                    *victimPTE = victimPteContents;
+
+                    LeaveCriticalSection(victimPTELock);
                 }
 
                 frameNumber = findFrameNumberFromFrame(currentFrame);
 
                 // Now we have a page. Now we decide to swap from disk or not.
-                if (currentPTE->entireFormat == 0)
+                if (pteContents.entireFormat == 0)
                 {
                     // In this case we have a brand new PTE, nothing to read from disk (continue as usual)
                     // We just need to wipe it to get rid of previous contents IF we got it from the standby list.
@@ -173,7 +190,7 @@ ULONG userThread(_In_ PVOID Context)
                 else
                 {
                     // Else we are on disk, so we need to swap from disk.
-                    ULONG64 diskIndex = currentPTE->invalidFormat.diskIndex;
+                    ULONG64 diskIndex = pteContents.invalidFormat.diskIndex;
 
                     swapFromDisk(currentFrame, diskIndex);
                 }
@@ -191,6 +208,9 @@ ULONG userThread(_In_ PVOID Context)
             checkVa(arbitrary_va);
 
 
+            // Re-acquire PTE lock to update this PTE
+            EnterCriticalSection(PTELock);
+
             // Fill in fields for PTE (valid bit, page frame number)
             currentPTE->validFormat.isValid = 1;
             currentPTE->validFormat.isTransitionFormat = 0;
@@ -198,17 +218,22 @@ ULONG userThread(_In_ PVOID Context)
 
             currentFrame->PTE = currentPTE;
 
+            LeaveCriticalSection(PTELock);
+
             // Add to active list
             EnterCriticalSection(&activeListLock);
             activeList = addToFrameList(activeList, currentFrame);
             LeaveCriticalSection(&activeListLock);
 
-            //
-            // No exception handler needed now since we have connected
-            // the virtual address above to one of our physical pages
-            // so no subsequent fault can occur.
-            //
+        }
+        else
+        {
+            // Else we didn't page fault so just release PTE lock.
+            LeaveCriticalSection(PTELock);
+        }
 
+        if (page_faulted)
+        {
             *arbitrary_va = (ULONG_PTR) arbitrary_va;
         }
     }
