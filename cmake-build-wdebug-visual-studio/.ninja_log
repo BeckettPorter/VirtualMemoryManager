@@ -90,3 +90,14 @@
 3	645	7756773406513495	CMakeFiles/VirtualMemoryManager.dir/vm.c.obj	713390c2571b67ac
 23	654	7756773406713581	CMakeFiles/VirtualMemoryManager.dir/components/threads/diskThread.c.obj	77c8b152131dadc1
 654	790	7756773413020727	VirtualMemoryManager.exe	6d69bc4b2fc8bdd4
+49	921	7756853326247742	CMakeFiles/VirtualMemoryManager.dir/components/threads/diskThread.c.obj	77c8b152131dadc1
+56	947	7756853326320644	CMakeFiles/VirtualMemoryManager.dir/components/threads/trimThread.c.obj	29fb65e370f5c0d8
+19	953	7756853325966333	CMakeFiles/VirtualMemoryManager.dir/components/initialize.c.obj	e981f4d8f357b8dd
+4	954	7756853325807090	CMakeFiles/VirtualMemoryManager.dir/vm.c.obj	713390c2571b67ac
+33	963	7756853326093409	CMakeFiles/VirtualMemoryManager.dir/components/disk.c.obj	5048aa3f89497d34
+41	968	7756853326171875	CMakeFiles/VirtualMemoryManager.dir/components/threads/userThread.c.obj	81c430e3df500816
+27	979	7756853326038711	CMakeFiles/VirtualMemoryManager.dir/components/pages.c.obj	96cc71be5cef9585
+12	985	7756853325881885	CMakeFiles/VirtualMemoryManager.dir/components/utilities.c.obj	99a744b5b15fe1f2
+985	1203	7756853335618769	VirtualMemoryManager.exe	6d69bc4b2fc8bdd4
+7	722	7756853559437593	CMakeFiles/VirtualMemoryManager.dir/components/utilities.c.obj	99a744b5b15fe1f2
+723	904	7756853566593163	VirtualMemoryManager.exe	6d69bc4b2fc8bdd4

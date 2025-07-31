@@ -69,7 +69,7 @@ ULONG userThread(_In_ PVOID Context)
         Frame* currentFrame;
 
         CRITICAL_SECTION* PTELock = GetPTELock(currentPTE);
-        EnterCriticalSection(PTELock);
+        acquireLock(PTELock);
 
         __try {
 
@@ -82,7 +82,7 @@ ULONG userThread(_In_ PVOID Context)
 
         // Read the PTE contents while we have the lock
         PageTableEntry pteContents = *currentPTE;
-        LeaveCriticalSection(PTELock);
+        releaseLock(PTELock);
         // Release the lock after we read the contents.
 
         if (page_faulted)
@@ -96,24 +96,24 @@ ULONG userThread(_In_ PVOID Context)
                 // NEED TO REMOVE FROM MODIFIED LIST IF WE GRAB BACK
                 if (currentFrame->isOnModifiedList == 1)
                 {
-                    EnterCriticalSection(&modifiedListLock);
+                    acquireLock(&modifiedListLock);
                     modifiedList = removeFromFrameList(modifiedList, currentFrame);
                     currentFrame->isOnModifiedList = 0;
-                    LeaveCriticalSection(&modifiedListLock);
+                    releaseLock(&modifiedListLock);
                 }
                 else
                 {
                     // If our current frame is not on the modified list, but it IS in transition,
                     // we need to remove it from the standby list.
-                    EnterCriticalSection(&standbyListLock);
+                    acquireLock(&standbyListLock);
                     standbyList = removeFromFrameList(standbyList, currentFrame);
                     ULONG64 diskIndex = currentFrame->diskIndex;
-                    LeaveCriticalSection(&standbyListLock);
+                    releaseLock(&standbyListLock);
 
 
-                    EnterCriticalSection(&diskSpaceLock);
+                    acquireLock(&diskSpaceLock);
                     freeDiskSpace[diskIndex] = true;
-                    LeaveCriticalSection(&diskSpaceLock);
+                    releaseLock(&diskSpaceLock);
                 }
             }
             else
@@ -142,9 +142,9 @@ ULONG userThread(_In_ PVOID Context)
                     // before or we just evicted frames and added them to it.
 
                     // So now we know we can get a frame from the standby list.
-                    EnterCriticalSection(&standbyListLock);
+                    acquireLock(&standbyListLock);
                     currentFrame = popFirstFrame(&standbyList);
-                    LeaveCriticalSection(&standbyListLock);
+                    releaseLock(&standbyListLock);
 
                     if (currentFrame == NULL)
                     {
@@ -154,7 +154,7 @@ ULONG userThread(_In_ PVOID Context)
                     PageTableEntry *victimPTE = currentFrame->PTE;
 
                     CRITICAL_SECTION* victimPTELock = GetPTELock(victimPTE);
-                    EnterCriticalSection(victimPTELock);
+                    acquireLock(victimPTELock);
 
                     // Victim PTE is in transition format, need to turn to invalid disk format
                     PageTableEntry victimPteContents;
@@ -167,7 +167,7 @@ ULONG userThread(_In_ PVOID Context)
 
                     *victimPTE = victimPteContents;
 
-                    LeaveCriticalSection(victimPTELock);
+                    releaseLock(victimPTELock);
                 }
 
                 frameNumber = findFrameNumberFromFrame(currentFrame);
@@ -207,12 +207,12 @@ ULONG userThread(_In_ PVOID Context)
             checkVa(arbitrary_va);
 
             // Add to active list
-            EnterCriticalSection(&activeListLock);
+            acquireLock(&activeListLock);
             activeList = addToFrameList(activeList, currentFrame);
-            LeaveCriticalSection(&activeListLock);
+            releaseLock(&activeListLock);
 
             // Re-acquire PTE lock to update this PTE
-            EnterCriticalSection(PTELock);
+            acquireLock(PTELock);
 
             // Fill in fields for PTE (valid bit, page frame number)
             currentPTE->validFormat.isValid = 1;
@@ -221,7 +221,7 @@ ULONG userThread(_In_ PVOID Context)
 
             currentFrame->PTE = currentPTE;
 
-            LeaveCriticalSection(PTELock);
+            releaseLock(PTELock);
         }
 
         if (page_faulted)
