@@ -20,9 +20,11 @@ ULONG userThread(_In_ PVOID Context)
     unsigned random_number;
     BOOL page_faulted;
     ULONG_PTR virtual_address_size;
+    ULONG64 i;
 
+    printf("Thread id %u started\n", ((PTHREAD_INFO) Context)->ThreadNumber);
 
-    for (ULONG64 i = 0; i < MB (1); i += 1)
+    for (i = 0; i < 1024; i += 1)
     {
         //
         // Randomly access different portions of the virtual address
@@ -125,18 +127,23 @@ ULONG userThread(_In_ PVOID Context)
                 if (currentFrame == NULL) {
                     retrievedFromStandbyList = true;
 
+                    acquireLock(&standbyListLock);
+                    boolean standbyListEmpty = standbyList == NULL;
+                    releaseLock(&standbyListLock);
+
                     // Check if we can get a frame from the standby list
-                    if (standbyList == NULL)
+                    if (standbyListEmpty)
                     {
                         // If we can't get any from the standby list
                         // Batch evict frames from the active list and add them to the modified list
 
+                        acquireLock(&trimOperationLock);
                         // TODO bp: this will set event and trimmer thread will have this code.
                         SetEvent(trimEvent);
 
-
                         // #TODO bp: Right here, I need to wait for modified page write to be done writing to disk.
                         WaitForSingleObject(finishedModWriteEvent, INFINITE);
+                        releaseLock(&trimOperationLock);
                     }
                     // Now we know the standby list is not empty, either because it wasn't empty
                     // before or we just evicted frames and added them to it.
@@ -146,10 +153,7 @@ ULONG userThread(_In_ PVOID Context)
                     currentFrame = popFirstFrame(&standbyList);
                     releaseLock(&standbyListLock);
 
-                    if (currentFrame == NULL)
-                    {
-                        DebugBreak();
-                    }
+                    ASSERT(currentFrame != NULL);
 
                     PageTableEntry *victimPTE = currentFrame->PTE;
 
@@ -229,6 +233,10 @@ ULONG userThread(_In_ PVOID Context)
             *arbitrary_va = (ULONG_PTR) arbitrary_va;
         }
     }
+
+    printf("Thread id %u finished\n", ((PTHREAD_INFO) Context)->ThreadNumber);
+
+    // ASSERT(false);
 
     shutdownUserThread(((PTHREAD_INFO) Context)->ThreadNumber);
     return 0;

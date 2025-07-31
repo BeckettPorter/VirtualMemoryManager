@@ -16,6 +16,7 @@ Frame* getFreeFrame()
     // If our list is empty, return NULL because we couldn't find a free frame.
     if (freeList == NULL)
     {
+        releaseLock(&freeListLock);
         return NULL;
     }
 

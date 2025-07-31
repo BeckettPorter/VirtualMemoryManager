@@ -60,9 +60,10 @@ VOID swapToDisk()
 
     ASSERT(numPagesToActuallySwap != 0);
 
+    // #todo bp: lock transfer write va
 
-    if (MapUserPhysicalPages (transferVA, numPagesToActuallySwap, swapFrameNumbers) == FALSE) {
-        printf ("swapToDisk : could not map VA %p to page %llX\n", transferVA,
+    if (MapUserPhysicalPages (writeTransferVA, numPagesToActuallySwap, swapFrameNumbers) == FALSE) {
+        printf ("swapToDisk : could not map VA %p to page %llX\n", writeTransferVA,
             swapFrameNumbers);
 
         DebugBreak();
@@ -75,7 +76,7 @@ VOID swapToDisk()
 
         Frame* currentFrame = findFrameFromFrameNumber(swapFrameNumbers[i]);
 
-        PVOID copyVA = (PVOID) ((ULONG_PTR)transferVA + i * PAGE_SIZE);
+        PVOID copyVA = (PVOID) ((ULONG_PTR)writeTransferVA + i * PAGE_SIZE);
 
         // Copy the contents of the VA to the disk space we are trying to write to.
         memcpy(totalDiskSpace + currentDiskSlot * PAGE_SIZE, copyVA, PAGE_SIZE);
@@ -92,7 +93,7 @@ VOID swapToDisk()
         releaseLock(&diskSpaceLock);
     }
 
-    if (!MapUserPhysicalPages(transferVA, numPagesToActuallySwap, NULL)) {
+    if (!MapUserPhysicalPages(writeTransferVA, numPagesToActuallySwap, NULL)) {
         printf("swapToDisk: Failed to unmap user physical pages!");
         exit(-1);
     }
@@ -162,4 +163,6 @@ VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom)
     releaseLock(&diskSpaceLock);
 
     memcpy(transferVAToUse, totalDiskSpace + diskIndexToTransferFrom * PAGE_SIZE, PAGE_SIZE);
+
+    releaseTransferVALock();
 }

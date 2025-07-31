@@ -100,6 +100,7 @@ boolean wipePage(Frame* frameToWipe)
 
     PVOID transferVAToUse = acquireTransferVA();
 
+    //ASSERT (FALSE);
     if (MapUserPhysicalPages (transferVAToUse, 1, &frameNumberToWipe) == FALSE) {
 
         printf ("wipePage : could not map transferVA %p to frame num %llX\n", transferVAToUse,
@@ -108,7 +109,11 @@ boolean wipePage(Frame* frameToWipe)
         DebugBreak();
     }
 
+ //   ASSERT (false);
+
     memset(transferVAToUse, 0, PAGE_SIZE);
+
+    releaseTransferVALock();
 
     return true;
 }
@@ -126,9 +131,12 @@ PVOID acquireTransferVA()
 
     PVOID result = (PVOID) ((ULONG_PTR)transferVA + currentTransferVAIndex * PAGE_SIZE);
 
-    releaseLock(&transferVALock);
-
     return result;
+}
+
+VOID releaseTransferVALock()
+{
+    releaseLock(&transferVALock);
 }
 
 // Flush all of the transfer VA's that we have mapped.
@@ -162,12 +170,12 @@ CRITICAL_SECTION* GetPTELock(PageTableEntry* pte)
 
 VOID acquireLock(CRITICAL_SECTION* lock)
 {
-    printf("Acquiring lock %p\n", lock);
+    // printf("Acquiring lock %p\n", lock);
     EnterCriticalSection(lock);
 }
 
 VOID releaseLock(CRITICAL_SECTION* lock)
 {
-    printf("Releasing lock %p\n", lock);
+    // printf("Releasing lock %p\n", lock);
     LeaveCriticalSection(lock);
 }

@@ -12,7 +12,6 @@
 
 ULONG trimThread(_In_ PVOID Context)
 {
-
     HANDLE eventsToWaitOn[2];
     eventsToWaitOn[0] = trimEvent;
     eventsToWaitOn[SHUTDOWN_PROGRAM_EVENT_INDEX] = shutdownProgramEvent;
