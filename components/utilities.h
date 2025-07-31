@@ -37,6 +37,8 @@
 #define TRIM_THREAD 1
 #define DISK_THREAD 2
 
+#define PTE_LOCK_TABLE_SIZE 1024
+
 #define SHUTDOWN_PROGRAM_EVENT_INDEX 1
 
 #define ASSERT(x) if (!(x)) { DebugBreak(); }
@@ -157,6 +159,15 @@ CRITICAL_SECTION modifiedListLock;
 CRITICAL_SECTION standbyListLock;
 CRITICAL_SECTION diskSpaceLock;
 CRITICAL_SECTION threadCountLock;
+
+CRITICAL_SECTION pteLockTable[PTE_LOCK_TABLE_SIZE];
+
+CRITICAL_SECTION* GetPTELock(PageTableEntry* pte);
+
+// LOCK HEIRARCHY
+// 1. diskSpaceLock
+// 2. List locks
+// 3. PTE locks
 
 
 

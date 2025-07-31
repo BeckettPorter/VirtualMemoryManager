@@ -78,6 +78,10 @@ VOID evictFrame()
 
         PageTableEntry* victimPTE = currentFrameToFix->PTE;
 
+        CRITICAL_SECTION* PTELock = GetPTELock(victimPTE);
+
+        EnterCriticalSection(PTELock);
+
         PageTableEntry PTEContents = *victimPTE;
 
         PTEContents.entireFormat = 0;
@@ -88,6 +92,8 @@ VOID evictFrame()
         findFrameFromFrameNumber(PTEContents.transitionFormat.pageFrameNumber)->diskIndex = 0;
 
         victimPTE->entireFormat = PTEContents.entireFormat;
+
+        LeaveCriticalSection(PTELock);
 
         // NEED TO ADD TO MODIFIED LIST
         EnterCriticalSection(&modifiedListLock);

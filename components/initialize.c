@@ -124,6 +124,11 @@ VOID initCriticalSections()
     InitializeCriticalSection (&standbyListLock);
     InitializeCriticalSection (&diskSpaceLock);
     InitializeCriticalSection (&threadCountLock);
+
+    for (ULONG64 i = 0; i < PTE_LOCK_TABLE_SIZE; i++)
+    {
+        InitializeCriticalSection (&pteLockTable[i]);
+    }
 }
 
 VOID createThreads()
