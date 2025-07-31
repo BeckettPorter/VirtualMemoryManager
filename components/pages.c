@@ -11,7 +11,7 @@
 
 Frame* getFreeFrame()
 {
-    EnterCriticalSection(&freeListLock);
+    acquireLock(&freeListLock);
 
     // If our list is empty, return NULL because we couldn't find a free frame.
     if (freeList == NULL)
@@ -21,7 +21,7 @@ Frame* getFreeFrame()
 
     // Get first frame from free list and set head to next one.
     Frame* frame = popFirstFrame(&freeList);
-    LeaveCriticalSection(&freeListLock);
+    releaseLock(&freeListLock);
 
     return frame;
 }
@@ -32,7 +32,7 @@ VOID evictFrame()
     void* evictVAs[MAX_WRITE_PAGES];
     ULONG64 numPagesToEvict = 0;
 
-    EnterCriticalSection(&activeListLock);
+    acquireLock(&activeListLock);
     while (numPagesToEvict < MAX_WRITE_PAGES)
     {
 
@@ -61,7 +61,7 @@ VOID evictFrame()
         evictVAs[numPagesToEvict] = PageTableEntryToVA(currentFrame->PTE);
         numPagesToEvict++;
     }
-    LeaveCriticalSection(&activeListLock);
+    releaseLock(&activeListLock);
 
     // unmap the old VA (batched)
     if (MapUserPhysicalPagesScatter (evictVAs, numPagesToEvict, NULL) == FALSE) {
@@ -80,7 +80,7 @@ VOID evictFrame()
 
         CRITICAL_SECTION* PTELock = GetPTELock(victimPTE);
 
-        EnterCriticalSection(PTELock);
+        acquireLock(PTELock);
 
         PageTableEntry PTEContents = *victimPTE;
 
@@ -93,13 +93,13 @@ VOID evictFrame()
 
         victimPTE->entireFormat = PTEContents.entireFormat;
 
-        LeaveCriticalSection(PTELock);
+        releaseLock(PTELock);
 
         // NEED TO ADD TO MODIFIED LIST
-        EnterCriticalSection(&modifiedListLock);
+        acquireLock(&modifiedListLock);
         modifiedList = addToFrameList(modifiedList, currentFrameToFix);
         modifiedListLength++;
-        LeaveCriticalSection(&modifiedListLock);
+        releaseLock(&modifiedListLock);
 
         // Set to be on the modified list in the frame.
         currentFrameToFix->isOnModifiedList = 1;

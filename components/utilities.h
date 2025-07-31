@@ -193,4 +193,7 @@ VOID flushTransferVAs();
 
 VOID shutdownUserThread(int userThreadIndex);
 
+VOID acquireLock(CRITICAL_SECTION* lock);
+VOID releaseLock(CRITICAL_SECTION* lock);
+
 #endif //UTILITIES_H

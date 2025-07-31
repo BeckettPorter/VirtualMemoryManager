@@ -115,7 +115,7 @@ boolean wipePage(Frame* frameToWipe)
 
 PVOID acquireTransferVA()
 {
-    EnterCriticalSection(&transferVALock);
+    acquireLock(&transferVALock);
 
     currentTransferVAIndex++;
     if (currentTransferVAIndex == TRANSFER_VA_COUNT)
@@ -126,7 +126,7 @@ PVOID acquireTransferVA()
 
     PVOID result = (PVOID) ((ULONG_PTR)transferVA + currentTransferVAIndex * PAGE_SIZE);
 
-    LeaveCriticalSection(&transferVALock);
+    releaseLock(&transferVALock);
 
     return result;
 }
@@ -142,7 +142,7 @@ VOID flushTransferVAs()
 
 VOID shutdownUserThread(int userThreadIndex)
 {
-    EnterCriticalSection(&threadCountLock);
+    acquireLock(&threadCountLock);
     numActiveUserThreads--;
     if (numActiveUserThreads == 0)
     {
@@ -150,7 +150,7 @@ VOID shutdownUserThread(int userThreadIndex)
         printf ("full_virtual_memory_test : finished accessing random virtual addresses\n");
 
     }
-    LeaveCriticalSection(&threadCountLock);
+    releaseLock(&threadCountLock);
 }
 
 CRITICAL_SECTION* GetPTELock(PageTableEntry* pte)
@@ -158,4 +158,16 @@ CRITICAL_SECTION* GetPTELock(PageTableEntry* pte)
     // Hash the PTE address to get lock index
     ULONG64 hash = ((ULONG64)pte / sizeof(PageTableEntry)) % PTE_LOCK_TABLE_SIZE;
     return &pteLockTable[hash];
+}
+
+VOID acquireLock(CRITICAL_SECTION* lock)
+{
+    printf("Acquiring lock %p\n", lock);
+    EnterCriticalSection(lock);
+}
+
+VOID releaseLock(CRITICAL_SECTION* lock)
+{
+    printf("Releasing lock %p\n", lock);
+    LeaveCriticalSection(lock);
 }
