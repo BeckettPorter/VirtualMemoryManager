@@ -118,6 +118,9 @@ PULONG_PTR physical_page_numbers;
 ULONG_PTR physical_page_count;
 Frame* pfnArray;
 
+// Theres a function called CONTAINING_RECORD that takes a pointer, the NAME of a structure, and a field name.
+// Return value is the pointer to the start of the structure.
+// #TODO bp: Should change this to struct LIST HEAD with List entry, counter for length, and lock.
 Frame* freeList;
 Frame* activeList;
 Frame* modifiedList;
@@ -125,6 +128,7 @@ ULONG64 modifiedListLength;
 Frame* standbyList;
 
 void* transferVA;
+void* writeTransferVA;
 ULONG64 currentTransferVAIndex;
 
 // Timer variables
@@ -159,6 +163,7 @@ CRITICAL_SECTION modifiedListLock;
 CRITICAL_SECTION standbyListLock;
 CRITICAL_SECTION diskSpaceLock;
 CRITICAL_SECTION threadCountLock;
+CRITICAL_SECTION trimOperationLock;
 
 CRITICAL_SECTION pteLockTable[PTE_LOCK_TABLE_SIZE];
 
@@ -189,6 +194,7 @@ VOID checkVa(PULONG64 va);
 boolean wipePage(Frame* frameToWipe);
 
 PVOID acquireTransferVA();
+VOID releaseTransferVALock();
 VOID flushTransferVAs();
 
 VOID shutdownUserThread(int userThreadIndex);

@@ -79,6 +79,14 @@ VOID initDiskSpace()
                        &sharablePhysicalPages,
                        1);
 
+    writeTransferVA = VirtualAlloc2 (NULL,
+                       NULL,
+                       PAGE_SIZE * MAX_WRITE_PAGES,
+                       MEM_RESERVE | MEM_PHYSICAL,
+                       PAGE_READWRITE,
+                       &sharablePhysicalPages,
+                       1);
+
     // #TODO bp: this can be reduced
     totalDiskSpace = malloc(VIRTUAL_ADDRESS_SIZE);
     freeDiskSpace = malloc(NUMBER_OF_DISK_SLOTS * sizeof(boolean));
@@ -124,6 +132,7 @@ VOID initCriticalSections()
     InitializeCriticalSection (&standbyListLock);
     InitializeCriticalSection (&diskSpaceLock);
     InitializeCriticalSection (&threadCountLock);
+    InitializeCriticalSection (&trimOperationLock);
 
     for (ULONG64 i = 0; i < PTE_LOCK_TABLE_SIZE; i++)
     {
@@ -143,7 +152,7 @@ VOID createThreads()
     for (ULONG64 i = 0; i < NUMBER_USER_THREADS; i++)
     {
         currentThreadInfo = &threadInfoArray[currentThreadNumber];
-        currentThreadInfo->ThreadId = currentThreadNumber;
+        currentThreadInfo->ThreadNumber = currentThreadNumber;
 
         currentThreadInfo->ThreadHandle = createNewThread(userThread, currentThreadInfo);
 
@@ -158,7 +167,7 @@ VOID createThreads()
     for (ULONG64 i = 0; i < NUMBER_TRIM_THREADS; i++)
     {
         currentThreadInfo = &threadInfoArray[currentThreadNumber];
-        currentThreadInfo->ThreadId = currentThreadNumber;
+        currentThreadInfo->ThreadNumber = currentThreadNumber;
 
         currentThreadInfo->ThreadHandle = createNewThread(trimThread, currentThreadInfo);
 
@@ -169,7 +178,7 @@ VOID createThreads()
     for (ULONG64 i = 0; i < NUMBER_DISK_THREADS; i++)
     {
         currentThreadInfo = &threadInfoArray[currentThreadNumber];
-        currentThreadInfo->ThreadId = currentThreadNumber;
+        currentThreadInfo->ThreadNumber = currentThreadNumber;
 
         currentThreadInfo->ThreadHandle = createNewThread(diskThread, currentThreadInfo);
 
