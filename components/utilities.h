@@ -27,7 +27,7 @@
 #define EVENT_START_ON          TRUE
 #define EVENT_START_OFF         FALSE
 
-#define NUMBER_USER_THREADS 1
+#define NUMBER_USER_THREADS 2
 #define NUMBER_TRIM_THREADS 1
 #define NUMBER_DISK_THREADS 1
 #define TOTAL_NUMBER_OF_THREADS (NUMBER_USER_THREADS + NUMBER_TRIM_THREADS + NUMBER_DISK_THREADS)
@@ -167,6 +167,10 @@ CRITICAL_SECTION* GetPTELock(PageTableEntry* pte);
 // LOCK HEIRARCHY
 // 1. diskSpaceLock
 // 2. List locks
+// - 2.1. freeListLock
+// - 2.2. activeListLock
+// - 2.3. modifiedListLock
+// - 2.4. standbyListLock
 // 3. PTE locks
 
 

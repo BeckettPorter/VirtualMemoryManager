@@ -80,13 +80,13 @@ ULONG userThread(_In_ PVOID Context)
             page_faulted = TRUE;
         }
 
+        // Read the PTE contents while we have the lock
+        PageTableEntry pteContents = *currentPTE;
+        LeaveCriticalSection(PTELock);
+        // Release the lock after we read the contents.
+
         if (page_faulted)
         {
-            // Read the PTE contents while we have the lock
-            PageTableEntry pteContents = *currentPTE;
-
-            LeaveCriticalSection(PTELock);
-
             // Else, 2 possibilities, could be in transition (transition bit 1) or not
             if (pteContents.transitionFormat.isTransitionFormat == 1)
             {
@@ -109,7 +109,6 @@ ULONG userThread(_In_ PVOID Context)
                     standbyList = removeFromFrameList(standbyList, currentFrame);
                     ULONG64 diskIndex = currentFrame->diskIndex;
                     LeaveCriticalSection(&standbyListLock);
-
 
 
                     EnterCriticalSection(&diskSpaceLock);
@@ -207,6 +206,10 @@ ULONG userThread(_In_ PVOID Context)
 
             checkVa(arbitrary_va);
 
+            // Add to active list
+            EnterCriticalSection(&activeListLock);
+            activeList = addToFrameList(activeList, currentFrame);
+            LeaveCriticalSection(&activeListLock);
 
             // Re-acquire PTE lock to update this PTE
             EnterCriticalSection(PTELock);
@@ -218,17 +221,6 @@ ULONG userThread(_In_ PVOID Context)
 
             currentFrame->PTE = currentPTE;
 
-            LeaveCriticalSection(PTELock);
-
-            // Add to active list
-            EnterCriticalSection(&activeListLock);
-            activeList = addToFrameList(activeList, currentFrame);
-            LeaveCriticalSection(&activeListLock);
-
-        }
-        else
-        {
-            // Else we didn't page fault so just release PTE lock.
             LeaveCriticalSection(PTELock);
         }
 
