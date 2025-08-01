@@ -15,6 +15,7 @@
 #define MAX_WRITE_PAGES 16
 #define TRANSFER_VA_COUNT 16
 #define NUMBER_OF_DISK_SLOTS 4096
+#define TEST_ITERATIONS MB(1)
 
 // Threads
 #define AUTO_RESET              FALSE
@@ -52,6 +53,8 @@ typedef struct {
     ULONG64 isTransitionFormat: 1;
 
     ULONG64 pageFrameNumber: 40;
+
+    ULONG64 reserveBuffer: 22;
 } validPTE;
 
 typedef struct {
@@ -60,6 +63,8 @@ typedef struct {
     ULONG64 isTransitionFormat: 1;
 
     ULONG64 diskIndex: 40;
+
+    ULONG64 reserveBuffer: 22;
 } invalidPTE;
 
 typedef struct {
@@ -68,6 +73,8 @@ typedef struct {
     ULONG64 isTransitionFormat: 1;
 
     ULONG64 pageFrameNumber: 40;
+
+    ULONG64 reserveBuffer: 22;
 } transitionPTE;
 
 // PTE Union
@@ -165,18 +172,18 @@ CRITICAL_SECTION diskSpaceLock;
 CRITICAL_SECTION threadCountLock;
 CRITICAL_SECTION trimOperationLock;
 
-CRITICAL_SECTION pteLockTable[PTE_LOCK_TABLE_SIZE];
+CRITICAL_SECTION pteLockTable[NUMBER_OF_VIRTUAL_PAGES];
 
 CRITICAL_SECTION* GetPTELock(PageTableEntry* pte);
 
 // LOCK HEIRARCHY
-// 1. diskSpaceLock
-// 2. List locks
-// - 2.1. freeListLock
-// - 2.2. activeListLock
-// - 2.3. modifiedListLock
-// - 2.4. standbyListLock
-// 3. PTE locks
+// 1. PTE locks
+// 2. diskSpaceLock
+// 3. List locks
+// - 3.1. freeListLock
+// - 3.2. activeListLock
+// - 3.3. modifiedListLock
+// - 3.4. standbyListLock
 
 
 

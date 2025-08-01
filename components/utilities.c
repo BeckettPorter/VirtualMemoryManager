@@ -163,9 +163,8 @@ VOID shutdownUserThread(int userThreadIndex)
 
 CRITICAL_SECTION* GetPTELock(PageTableEntry* pte)
 {
-    // Hash the PTE address to get lock index
-    ULONG64 hash = ((ULONG64)pte / sizeof(PageTableEntry)) % PTE_LOCK_TABLE_SIZE;
-    return &pteLockTable[hash];
+    ULONG64 index = pte - pageTable;
+    return &pteLockTable[index];
 }
 
 VOID acquireLock(CRITICAL_SECTION* lock)
