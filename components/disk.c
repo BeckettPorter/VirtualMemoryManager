@@ -89,6 +89,7 @@ VOID swapToDisk()
 
         // Set the disk space we just copied to false to set it as occupied.
         acquireLock(&diskSpaceLock);
+        ASSERT(freeDiskSpace[currentDiskSlot] == true);
         freeDiskSpace[currentDiskSlot] = false;
         releaseLock(&diskSpaceLock);
     }
@@ -153,10 +154,7 @@ VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom)
     // If the slot in disk space we are trying to fill from is not already in use, debug break
     // because the contents should be there.
     acquireLock(&diskSpaceLock);
-    if (freeDiskSpace[diskIndexToTransferFrom] == true)
-    {
-        DebugBreak();
-    }
+    ASSERT(freeDiskSpace[diskIndexToTransferFrom] == false);
 
     // Set the disk space we just copied from to true to clear it from being used.
     freeDiskSpace[diskIndexToTransferFrom] = true;

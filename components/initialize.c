@@ -48,7 +48,7 @@ VOID initListsAndPFNs()
     modifiedListLength = 0;
     standbyList = NULL;
 
-    // For each physical page we have, commit the memory for it in the sparse arary.
+    // For each physical page we have, commit the memory for it in the sparse array.
     for (ULONG64 i = 0; i < physical_page_count; i++)
     {
         ULONG64 currentFrameNumber = physical_page_numbers[i];
@@ -134,7 +134,7 @@ VOID initCriticalSections()
     InitializeCriticalSection (&threadCountLock);
     InitializeCriticalSection (&trimOperationLock);
 
-    for (ULONG64 i = 0; i < PTE_LOCK_TABLE_SIZE; i++)
+    for (ULONG64 i = 0; i < NUMBER_OF_VIRTUAL_PAGES; i++)
     {
         InitializeCriticalSection (&pteLockTable[i]);
     }
