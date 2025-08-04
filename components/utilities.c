@@ -178,3 +178,7 @@ VOID releaseLock(CRITICAL_SECTION* lock)
     // printf("Releasing lock %p\n", lock);
     LeaveCriticalSection(lock);
 }
+
+BOOL tryAcquireLock(CRITICAL_SECTION* lock) {
+    return TryEnterCriticalSection(lock);
+}
