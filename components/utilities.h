@@ -8,6 +8,7 @@
 
 #define PAGE_SIZE                   4096
 #define MB(x)                       ((x) * 1024 * 1024)
+#define GB(x)                       ((x) * 1024ULL * 1024 * 1024)
 #define VIRTUAL_ADDRESS_SIZE        MB(16)
 #define VIRTUAL_ADDRESS_SIZE_IN_UNSIGNED_CHUNKS        (VIRTUAL_ADDRESS_SIZE / sizeof (ULONG_PTR))
 #define NUMBER_OF_PHYSICAL_PAGES   ((VIRTUAL_ADDRESS_SIZE / PAGE_SIZE) / 64)
@@ -29,8 +30,8 @@
 #define EVENT_START_OFF         FALSE
 
 #define NUMBER_USER_THREADS 2
-#define NUMBER_TRIM_THREADS 1
-#define NUMBER_DISK_THREADS 1
+#define NUMBER_TRIM_THREADS 2
+#define NUMBER_DISK_THREADS 2
 #define TOTAL_NUMBER_OF_THREADS (NUMBER_USER_THREADS + NUMBER_TRIM_THREADS + NUMBER_DISK_THREADS)
 
 // Thread types
@@ -208,5 +209,6 @@ VOID shutdownUserThread(int userThreadIndex);
 
 VOID acquireLock(CRITICAL_SECTION* lock);
 VOID releaseLock(CRITICAL_SECTION* lock);
+BOOL tryAcquireLock(CRITICAL_SECTION* lock);
 
 #endif //UTILITIES_H

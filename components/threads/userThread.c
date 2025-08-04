@@ -149,7 +149,7 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
                 retrievedFromStandbyList = true;
 
                 // acquireLock(&standbyListLock);
-                // releaseLock(&standbyListLock);
+                // releaseLock(&standbyListLock)
 
                 acquireLock(&trimOperationLock);
                 // Check if we can get a frame from the standby list
