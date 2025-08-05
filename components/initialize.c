@@ -88,7 +88,7 @@ VOID initDiskSpace()
                        1);
 
     // #TODO bp: this can be reduced
-    totalDiskSpace = malloc(NUMBER_OF_DISK_SLOTS * PAGE_SIZE);
+    totalDiskSpace = malloc(VIRTUAL_ADDRESS_SIZE);
     freeDiskSpace = malloc(NUMBER_OF_DISK_SLOTS * sizeof(boolean));
     diskSearchStartIndex = 0;
 
