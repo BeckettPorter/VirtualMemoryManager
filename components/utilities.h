@@ -156,6 +156,7 @@ HANDLE trimEvent;
 HANDLE stopTrimmingEvent;
 HANDLE modWriteEvent;
 HANDLE finishedModWriteEvent;
+HANDLE waitingForPagesEvent;
 
 HANDLE shutdownProgramEvent;
 

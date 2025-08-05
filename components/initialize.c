@@ -88,7 +88,7 @@ VOID initDiskSpace()
                        1);
 
     // #TODO bp: this can be reduced
-    totalDiskSpace = malloc(VIRTUAL_ADDRESS_SIZE);
+    totalDiskSpace = malloc(NUMBER_OF_DISK_SLOTS * PAGE_SIZE);
     freeDiskSpace = malloc(NUMBER_OF_DISK_SLOTS * sizeof(boolean));
     diskSearchStartIndex = 0;
 
@@ -118,7 +118,9 @@ VOID createEvents()
     trimEvent = CreateEvent (NULL, AUTO_RESET, EVENT_START_OFF, NULL);
     stopTrimmingEvent = CreateEvent (NULL, AUTO_RESET, EVENT_START_OFF, NULL);
     modWriteEvent = CreateEvent (NULL, AUTO_RESET, EVENT_START_OFF, NULL);
-    finishedModWriteEvent = CreateEvent (NULL, AUTO_RESET, EVENT_START_OFF, NULL);
+    finishedModWriteEvent = CreateEvent (NULL, MANUAL_RESET, EVENT_START_OFF, NULL);
+
+    waitingForPagesEvent = CreateEvent (NULL, MANUAL_RESET, EVENT_START_OFF, NULL);
 
     shutdownProgramEvent = CreateEvent (NULL, MANUAL_RESET, EVENT_START_OFF, NULL);
 }

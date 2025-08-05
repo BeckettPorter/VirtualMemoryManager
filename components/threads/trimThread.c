@@ -29,6 +29,7 @@ ULONG trimThread(_In_ PVOID Context)
 
         evictFrame();
 
+        // #todo bp: if we want to add another trim thread, will probably need to make this manual reset.
         SetEvent(modWriteEvent);
     }
 

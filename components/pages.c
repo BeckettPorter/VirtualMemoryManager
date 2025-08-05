@@ -36,7 +36,6 @@ VOID evictFrame()
     acquireLock(&activeListLock);
     while (numPagesToEvict < MAX_WRITE_PAGES)
     {
-
         // Break from the while loop if we don't have any active frames to evict
         if (activeList == NULL)
         {
@@ -78,8 +77,22 @@ VOID evictFrame()
         Frame* currentFrameToFix = evictFrames[i];
 
         PageTableEntry* victimPTE = currentFrameToFix->PTE;
+        
+        // Check if victimPTE is valid before proceeding
+        if (victimPTE == NULL)
+        {
+            printf("evictFrame: victimPTE is NULL for frame %llu\n", findFrameNumberFromFrame(currentFrameToFix));
+            continue;
+        }
 
         CRITICAL_SECTION* PTELock = GetPTELock(victimPTE);
+        
+        // Check if PTELock is valid before proceeding
+        if (PTELock == NULL)
+        {
+            printf("evictFrame: Invalid PTELock for frame %llu\n", findFrameNumberFromFrame(currentFrameToFix));
+            continue;
+        }
 
         acquireLock(PTELock);
 
@@ -100,10 +113,10 @@ VOID evictFrame()
         acquireLock(&modifiedListLock);
         modifiedList = addToFrameList(modifiedList, currentFrameToFix);
         modifiedListLength++;
-        releaseLock(&modifiedListLock);
 
         // Set to be on the modified list in the frame.
         currentFrameToFix->isOnModifiedList = 1;
+        releaseLock(&modifiedListLock);
     }
 }
 
