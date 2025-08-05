@@ -122,12 +122,14 @@ PVOID acquireTransferVA()
 {
     acquireLock(&transferVALock);
 
-    currentTransferVAIndex++;
-    if (currentTransferVAIndex == TRANSFER_VA_COUNT)
+    // Check bounds before incrementing
+    if (currentTransferVAIndex >= TRANSFER_VA_COUNT - 1)
     {
         flushTransferVAs();
         currentTransferVAIndex = 0;
     }
+    
+    currentTransferVAIndex++;
 
     PVOID result = (PVOID) ((ULONG_PTR)transferVA + currentTransferVAIndex * PAGE_SIZE);
 
@@ -142,7 +144,7 @@ VOID releaseTransferVALock()
 // Flush all of the transfer VA's that we have mapped.
 VOID flushTransferVAs()
 {
-    if (!MapUserPhysicalPages(transferVA, currentTransferVAIndex, NULL)) {
+    if (!MapUserPhysicalPages(transferVA, currentTransferVAIndex + 1, NULL)) {
         printf("flushTransferVAs: Failed to unmap transfer VA's!");
         exit(-1);
     }
@@ -164,6 +166,14 @@ VOID shutdownUserThread(int userThreadIndex)
 CRITICAL_SECTION* GetPTELock(PageTableEntry* pte)
 {
     ULONG64 index = pte - pageTable;
+    
+    // Add bounds checking to prevent array out-of-bounds access
+    if (index >= NUMBER_OF_VIRTUAL_PAGES) {
+        printf("GetPTELock: Invalid PTE index %llu >= %u\n", index, NUMBER_OF_VIRTUAL_PAGES);
+        DebugBreak();
+        return NULL;
+    }
+    
     return &pteLockTable[index];
 }
 

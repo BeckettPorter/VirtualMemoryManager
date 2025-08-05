@@ -29,7 +29,11 @@ ULONG diskThread(_In_ PVOID Context)
 
         modifiedPageWrite();
 
+        // We need to acquire the standby list lock so we can't set the event and
+        // immidiately reset it in user thread.
+        acquireLock(&standbyListLock);
         SetEvent(finishedModWriteEvent);
+        releaseLock(&standbyListLock);
     }
 
     return 0;

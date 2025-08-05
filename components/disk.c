@@ -37,7 +37,6 @@ VOID swapToDisk()
 
     for (ULONG64 i = 0; i < numPagesToActuallySwap; i++)
     {
-
         acquireLock(&modifiedListLock);
         Frame* currentFrame = popFirstFrame(&modifiedList);
 
@@ -63,8 +62,7 @@ VOID swapToDisk()
     // #todo bp: lock transfer write va
 
     if (MapUserPhysicalPages (writeTransferVA, numPagesToActuallySwap, swapFrameNumbers) == FALSE) {
-        printf ("swapToDisk : could not map VA %p to page %llX\n", writeTransferVA,
-            swapFrameNumbers);
+        printf ("swapToDisk : could not map VA %p to pages\n", writeTransferVA);
 
         DebugBreak();
         return;
@@ -77,6 +75,13 @@ VOID swapToDisk()
         Frame* currentFrame = findFrameFromFrameNumber(swapFrameNumbers[i]);
 
         PVOID copyVA = (PVOID) ((ULONG_PTR)writeTransferVA + i * PAGE_SIZE);
+
+        // Add bounds checking to prevent memory corruption
+        if (currentDiskSlot >= NUMBER_OF_DISK_SLOTS) {
+            printf("swapToDisk: Invalid disk slot %llu >= %u\n", currentDiskSlot, NUMBER_OF_DISK_SLOTS);
+            DebugBreak();
+            return;
+        }
 
         // Copy the contents of the VA to the disk space we are trying to write to.
         memcpy(totalDiskSpace + currentDiskSlot * PAGE_SIZE, copyVA, PAGE_SIZE);
@@ -108,14 +113,14 @@ ULONG64 findFreeDiskSlot()
     // Make this start at last found slot.
     ULONG64 currentSearchIndex = diskSearchStartIndex;
 
-    for (ULONG64 i = 0; i < NUMBER_OF_VIRTUAL_PAGES; i++)
+    for (ULONG64 i = 0; i < NUMBER_OF_DISK_SLOTS; i++)
     {
         if (freeDiskSpace[currentSearchIndex] == true)
         {
             diskSearchStartIndex = currentSearchIndex + 1;
 
             // Wrap our search index around if we go past the end of the array.
-            if (diskSearchStartIndex >= NUMBER_OF_VIRTUAL_PAGES)
+            if (diskSearchStartIndex >= NUMBER_OF_DISK_SLOTS)
             {
                 diskSearchStartIndex = 0;
             }
@@ -126,7 +131,7 @@ ULONG64 findFreeDiskSlot()
         currentSearchIndex++;
 
         // Wrap our current search index around if we go past the end of the array.
-        if (currentSearchIndex >= NUMBER_OF_VIRTUAL_PAGES)
+        if (currentSearchIndex >= NUMBER_OF_DISK_SLOTS)
         {
             currentSearchIndex = 0;
         }
@@ -139,6 +144,13 @@ ULONG64 findFreeDiskSlot()
 
 VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom)
 {
+    // Add bounds checking to prevent memory corruption
+    if (diskIndexToTransferFrom >= NUMBER_OF_DISK_SLOTS) {
+        printf("swapFromDisk: Invalid disk index %llu >= %u\n", diskIndexToTransferFrom, NUMBER_OF_DISK_SLOTS);
+        DebugBreak();
+        return;
+    }
+    
     // Use same transfer VA for now, multithreaded might need a different one
     ULONG64 frameNumber = findFrameNumberFromFrame(frameToFill);
 
