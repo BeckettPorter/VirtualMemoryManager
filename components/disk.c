@@ -166,6 +166,7 @@ VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom)
     // If the slot in disk space we are trying to fill from is not already in use, debug break
     // because the contents should be there.
     acquireLock(&diskSpaceLock);
+    // #TODO bp: this gets triggered sometimes, fix bug
     ASSERT(freeDiskSpace[diskIndexToTransferFrom] == false);
 
     // Set the disk space we just copied from to true to clear it from being used.
