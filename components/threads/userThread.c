@@ -98,118 +98,104 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
     PageTableEntry* currentPTE = VAToPageTableEntry(arbitrary_va);
     ULONG64 frameNumber;
     Frame* currentFrame;
+    boolean retrievedFromStandbyList = false;
+    CRITICAL_SECTION* victimPTELock = NULL;
+    PageTableEntry* victimPTE = NULL;
 
+    // Step 1: Acquire PTE lock first (highest priority in hierarchy)
     CRITICAL_SECTION* PTELock = GetPTELock(currentPTE);
-    
-    // Check if PTELock is valid before proceeding
     if (PTELock == NULL)
     {
         printf("resolvePageFault: Invalid PTELock for VA %p\n", arbitrary_va);
         return;
     }
-
     acquireLock(PTELock);
 
     // Read the PTE contents while we have the lock
     PageTableEntry pteContents = *currentPTE;
 
-
     if (pteContents.invalidFormat.mustBeZero == 0)
     {
-        // Else, 2 possibilities, could be in transition (transition bit 1) or not
         if (pteContents.transitionFormat.isTransitionFormat == 1)
         {
+            // Case 1: Page is in transition - rescue from modified or standby list
             frameNumber = pteContents.transitionFormat.pageFrameNumber;
             currentFrame = findFrameFromFrameNumber(frameNumber);
 
-
-            // #Todo bp: while loop around this so we can get the locks and THEN check
-            // if we can rescue from mod or standby list
+            // Acquire list locks in correct order
             acquireLock(&modifiedListLock);
+            acquireLock(&standbyListLock);
+            acquireLock(&diskSpaceLock);
+
             if (currentFrame->isOnModifiedList == 1)
             {
-
                 modifiedList = removeFromFrameList(modifiedList, currentFrame);
                 currentFrame->isOnModifiedList = 0;
-
             }
             else
             {
-                // If our current frame is not on the modified list, but it IS in transition,
-                // we need to remove it from the standby list.
-                acquireLock(&standbyListLock);
+                // Remove from standby list and free disk space
                 standbyList = removeFromFrameList(standbyList, currentFrame);
                 ULONG64 diskIndex = currentFrame->diskIndex;
-                releaseLock(&standbyListLock);
-
-
-                acquireLock(&diskSpaceLock);
                 freeDiskSpace[diskIndex] = true;
-                releaseLock(&diskSpaceLock);
             }
+
+            releaseLock(&diskSpaceLock);
+            releaseLock(&standbyListLock);
             releaseLock(&modifiedListLock);
         }
         else
-            // Else if we don't rescue (either a fresh VA, or one that was trimmed and written to disk)
         {
-            boolean retrievedFromStandbyList = false;
+            // Case 2: Need to get a new frame
             currentFrame = getFreeFrame();
 
-            if (currentFrame == NULL) {
+            if (currentFrame == NULL) 
+            {
                 retrievedFromStandbyList = true;
 
-
+                // Acquire list locks in correct order
                 acquireLock(&standbyListLock);
-                // Check if we can get a frame from the standby list
+                
                 while (standbyList == NULL)
                 {
-                    // If we can't get any from the standby list
-                    // Batch evict frames from the active list and add them to the modified list
-
-                    // Reset this event so we can allow the disk mod write to wake us up.
-                    ResetEvent(finishedModWriteEvent);
-
-                    // Release standby list lock because we are going to wait and we don't
-                    // want to stop others who need the standby list
+                    // Release locks before waiting
                     releaseLock(&standbyListLock);
-
-                    // Release PTE lock so another thread can resolve its fault
                     releaseLock(PTELock);
 
+                    ResetEvent(finishedModWriteEvent);
                     SetEvent(trimEvent);
-
                     WaitForSingleObject(finishedModWriteEvent, INFINITE);
 
 
                     // Reacquire PTE lock and continue if another user thread hasn't resolved it.
                     acquireLock(PTELock);
-                    if (pteContents.entireFormat != currentPTE->entireFormat)
-                    {
+
+                    // Check if another thread has already resolved this page fault
+                    PageTableEntry currentPteContents = *currentPTE;
+                    if (currentPteContents.validFormat.isValid == 1) {
+                        // Another thread has already resolved this page fault
+                        releaseLock(PTELock);
+                        return;
+                    }
+
+                    if (pteContents.entireFormat != currentPTE->entireFormat) {
                         releaseLock(PTELock);
                         return;
                     }
                     acquireLock(&standbyListLock);
                 }
 
-                // Now we know the standby list is not empty, either because it wasn't empty
-                // before or we just evicted frames and added them to it.
-
-                // So now we know we can get a frame from the standby list.
-
                 currentFrame = popFirstFrame(&standbyList);
                 releaseLock(&standbyListLock);
 
-                // In this case, we can just retry since it means someone else stole all
-                // standby pages before we could get them.
                 if (currentFrame == NULL)
                 {
                     releaseLock(PTELock);
                     return;
                 }
 
-                PageTableEntry *victimPTE = currentFrame->PTE;
-                
-                // Check if victimPTE is valid before proceeding
+                // Get victim PTE lock (another PTE lock)
+                victimPTE = currentFrame->PTE;
                 if (victimPTE == NULL)
                 {
                     printf("resolvePageFault: victimPTE is NULL for frame %llu\n", findFrameNumberFromFrame(currentFrame));
@@ -217,27 +203,22 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
                     return;
                 }
 
-                CRITICAL_SECTION* victimPTELock = GetPTELock(victimPTE);
-                
-                // Check if victimPTELock is valid before proceeding
+                victimPTELock = GetPTELock(victimPTE);
                 if (victimPTELock == NULL)
                 {
                     printf("resolvePageFault: Invalid victimPTELock for frame %llu\n", findFrameNumberFromFrame(currentFrame));
                     releaseLock(PTELock);
                     return;
                 }
-                
+
                 acquireLock(victimPTELock);
 
-                // Victim PTE is in transition format, need to turn to invalid disk format
+                // Update victim PTE to invalid disk format
                 PageTableEntry victimPteContents;
-
                 victimPteContents.entireFormat = 0;
                 victimPteContents.invalidFormat.mustBeZero = 0;
                 victimPteContents.invalidFormat.isTransitionFormat = 0;
-
                 victimPteContents.invalidFormat.diskIndex = currentFrame->diskIndex;
-
                 *victimPTE = victimPteContents;
 
                 releaseLock(victimPTELock);
@@ -245,11 +226,9 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
 
             frameNumber = findFrameNumberFromFrame(currentFrame);
 
-            // Now we have a page. Now we decide to swap from disk or not.
+            // Handle disk swap if needed
             if (pteContents.entireFormat == 0)
             {
-                // In this case we have a brand new PTE, nothing to read from disk (continue as usual)
-                // We just need to wipe it to get rid of previous contents IF we got it from the standby list.
                 if (retrievedFromStandbyList)
                 {
                     if (wipePage(currentFrame) == false)
@@ -261,38 +240,30 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
             }
             else
             {
-                // Else we are on disk, so we need to swap from disk.
                 ULONG64 diskIndex = pteContents.invalidFormat.diskIndex;
-
                 swapFromDisk(currentFrame, diskIndex);
             }
         }
 
-        //mupp (va,number of pages,frameNumber) - THIS MAKES IT VISIBLE TO USER AGAIN
-        if (MapUserPhysicalPages (arbitrary_va, 1, &frameNumber) == FALSE) {
-
-            printf ("full_virtual_memory_test : could not map VA %p to page %llX\n", arbitrary_va,
-                frameNumber);
-
+        // Map the page
+        if (MapUserPhysicalPages(arbitrary_va, 1, &frameNumber) == FALSE) {
+            printf("full_virtual_memory_test : could not map VA %p to page %llX\n", arbitrary_va, frameNumber);
             DebugBreak();
         }
 
         checkVa(arbitrary_va);
 
-        // Add to active list
+        // Add to active list (acquire lock in correct order)
         acquireLock(&activeListLock);
         activeList = addToFrameList(activeList, currentFrame);
         releaseLock(&activeListLock);
 
-
-        // Fill in fields for PTE (valid bit, page frame number)
+        // Update PTE
         currentPTE->validFormat.isValid = 1;
         currentPTE->validFormat.isTransitionFormat = 0;
         currentPTE->validFormat.pageFrameNumber = findFrameNumberFromFrame(currentFrame);
-
         currentFrame->PTE = currentPTE;
     }
-
 
     releaseLock(PTELock);
 }
