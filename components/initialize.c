@@ -120,8 +120,6 @@ VOID createEvents()
     modWriteEvent = CreateEvent (NULL, AUTO_RESET, EVENT_START_OFF, NULL);
     finishedModWriteEvent = CreateEvent (NULL, MANUAL_RESET, EVENT_START_OFF, NULL);
 
-    waitingForPagesEvent = CreateEvent (NULL, MANUAL_RESET, EVENT_START_OFF, NULL);
-
     shutdownProgramEvent = CreateEvent (NULL, MANUAL_RESET, EVENT_START_OFF, NULL);
 }
 
@@ -134,7 +132,6 @@ VOID initCriticalSections()
     InitializeCriticalSection (&standbyListLock);
     InitializeCriticalSection (&diskSpaceLock);
     InitializeCriticalSection (&threadCountLock);
-    InitializeCriticalSection (&trimOperationLock);
 
     for (ULONG64 i = 0; i < NUMBER_OF_VIRTUAL_PAGES; i++)
     {
