@@ -156,7 +156,6 @@ HANDLE trimEvent;
 HANDLE stopTrimmingEvent;
 HANDLE modWriteEvent;
 HANDLE finishedModWriteEvent;
-HANDLE waitingForPagesEvent;
 
 HANDLE shutdownProgramEvent;
 
@@ -172,7 +171,6 @@ CRITICAL_SECTION modifiedListLock;
 CRITICAL_SECTION standbyListLock;
 CRITICAL_SECTION diskSpaceLock;
 CRITICAL_SECTION threadCountLock;
-CRITICAL_SECTION trimOperationLock;
 
 CRITICAL_SECTION pteLockTable[NUMBER_OF_VIRTUAL_PAGES];
 

@@ -149,13 +149,13 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
             // Case 2: Need to get a new frame
             currentFrame = getFreeFrame();
 
-            if (currentFrame == NULL) 
+            if (currentFrame == NULL)
             {
                 retrievedFromStandbyList = true;
 
                 // Acquire list locks in correct order
                 acquireLock(&standbyListLock);
-                
+
                 while (standbyList == NULL)
                 {
                     // Release locks before waiting
@@ -166,19 +166,10 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
                     SetEvent(trimEvent);
                     WaitForSingleObject(finishedModWriteEvent, INFINITE);
 
-
-                    // Reacquire PTE lock and continue if another user thread hasn't resolved it.
+                    // Reacquire locks in correct order
                     acquireLock(PTELock);
-
-                    // Check if another thread has already resolved this page fault
-                    PageTableEntry currentPteContents = *currentPTE;
-                    if (currentPteContents.validFormat.isValid == 1) {
-                        // Another thread has already resolved this page fault
-                        releaseLock(PTELock);
-                        return;
-                    }
-
-                    if (pteContents.entireFormat != currentPTE->entireFormat) {
+                    if (pteContents.entireFormat != currentPTE->entireFormat)
+                    {
                         releaseLock(PTELock);
                         return;
                     }
@@ -190,6 +181,21 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
 
                 if (currentFrame == NULL)
                 {
+                    releaseLock(PTELock);
+                    return;
+                }
+
+                // Double-check that no other thread has resolved this page fault
+                PageTableEntry currentPteContents = *currentPTE;
+                if (currentPteContents.validFormat.isValid == 1) {
+                    // Another thread has already resolved this page fault
+                    // Return the frame to the appropriate list
+                    if (currentFrame != NULL) {
+                        // Return to free list or standby list as appropriate
+                        acquireLock(&freeListLock);
+                        freeList = addToFrameList(freeList, currentFrame);
+                        releaseLock(&freeListLock);
+                    }
                     releaseLock(PTELock);
                     return;
                 }
