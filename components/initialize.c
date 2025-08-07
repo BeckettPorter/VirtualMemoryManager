@@ -42,12 +42,6 @@ VOID initListsAndPFNs()
         MEM_RESERVE,
         PAGE_READWRITE);
 
-    freeList = NULL;
-    activeList = NULL;
-    modifiedList = NULL;
-    modifiedListLength = 0;
-    standbyList = NULL;
-
     // For each physical page we have, commit the memory for it in the sparse array.
     for (ULONG64 i = 0; i < physical_page_count; i++)
     {
@@ -60,8 +54,9 @@ VOID initListsAndPFNs()
             MEM_COMMIT,
             PAGE_READWRITE);
 
-        pfnArray[currentFrameNumber].nextPFN = freeList;
-        freeList = &pfnArray[currentFrameNumber];
+        pfnArray[currentFrameNumber].nextPFN = freeList.headFrame;
+        freeList.length++;
+        freeList.headFrame = &pfnArray[currentFrameNumber];
         pfnArray[currentFrameNumber].PTE = NULL;
         pfnArray[currentFrameNumber].isOnModifiedList = 0;
     }

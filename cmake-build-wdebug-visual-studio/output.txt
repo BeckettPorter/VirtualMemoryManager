@@ -40,3 +40,82 @@ full_virtual_memory_test : finished accessing 1048576 random virtual addresses
  
 full_virtual_memory_test : finished accessing 1048576 random virtual addresses
  
+ 
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 1 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 3031ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 1 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 1797ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 1 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 1828ms
+ 
+ 
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 1 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 12078ms
+ 
+ 
+ 
+ 
+ 
+ 
+Thread id 1 started
+Thread id 0 started
+Thread id 0 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 12094ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 0 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 9922ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 0 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 10563ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 0 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 10547ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 0 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 9672ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 0 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 10438ms
+ 

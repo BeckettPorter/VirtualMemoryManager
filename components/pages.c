@@ -14,7 +14,7 @@ Frame* getFreeFrame()
     acquireLock(&freeListLock);
 
     // If our list is empty, return NULL because we couldn't find a free frame.
-    if (freeList == NULL)
+    if (freeList.headFrame == NULL)
     {
         releaseLock(&freeListLock);
         return NULL;
@@ -36,14 +36,16 @@ VOID evictFrame()
     acquireLock(&activeListLock);
     while (numPagesToEvict < MAX_WRITE_PAGES)
     {
+        validateFrameList(&activeList);
+
         // Break from the while loop if we don't have any active frames to evict
-        if (activeList == NULL)
+        if (activeList.headFrame == NULL)
         {
             break;
         }
 
         Frame* previousFrame = NULL;
-        Frame* currentFrame = activeList;
+        Frame* currentFrame = activeList.headFrame;
 
         // Walk through our PFNs until we reach the end of the array, moving them back one spot because we removed one.
         while (currentFrame->nextPFN != NULL) {
@@ -52,10 +54,13 @@ VOID evictFrame()
         }
 
         if (previousFrame == NULL) {
-            activeList = NULL;
+            activeList.headFrame = NULL;
         } else {
             previousFrame->nextPFN = NULL;
         }
+
+        activeList.length--;
+        validateFrameList(&activeList);
 
         evictFrames[numPagesToEvict] = currentFrame;
         evictVAs[numPagesToEvict] = PageTableEntryToVA(currentFrame->PTE);
@@ -81,8 +86,7 @@ VOID evictFrame()
         // Check if victimPTE is valid before proceeding
         if (victimPTE == NULL)
         {
-            printf("evictFrame: victimPTE is NULL for frame %llu\n", findFrameNumberFromFrame(currentFrameToFix));
-            continue;
+            DebugBreak();
         }
 
         CRITICAL_SECTION* PTELock = GetPTELock(victimPTE);
@@ -90,8 +94,7 @@ VOID evictFrame()
         // Check if PTELock is valid before proceeding
         if (PTELock == NULL)
         {
-            printf("evictFrame: Invalid PTELock for frame %llu\n", findFrameNumberFromFrame(currentFrameToFix));
-            continue;
+            DebugBreak();
         }
 
         acquireLock(PTELock);
@@ -111,8 +114,7 @@ VOID evictFrame()
 
         // NEED TO ADD TO MODIFIED LIST
         acquireLock(&modifiedListLock);
-        modifiedList = addToFrameList(modifiedList, currentFrameToFix);
-        modifiedListLength++;
+        addToFrameList(&modifiedList, currentFrameToFix);
 
         // Set to be on the modified list in the frame.
         currentFrameToFix->isOnModifiedList = 1;

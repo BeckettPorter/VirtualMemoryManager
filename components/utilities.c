@@ -32,27 +32,95 @@ void* PageTableEntryToVA(PageTableEntry* entry)
     return (void*)pointer;
 }
 
+VOID validateFrameList(frameListHead* head)
+{
+    return;
+    memset (DebugCheckPageArray, 0, physical_page_count * sizeof (ULONG_PTR));
+
+
+    ULONG64 count = 0;
+    ULONG64 foundIndex = 0;
+    Frame* current = head->headFrame;
+    while (current)
+    {
+        BOOL foundValid = false;
+        for (foundIndex = 0; foundIndex < physical_page_count; foundIndex++)
+        {
+            if (physical_page_numbers[foundIndex] == findFrameNumberFromFrame(current))
+            {
+                foundValid = true;
+                count++;
+                break;
+            }
+        }
+
+        if (!foundValid)
+        {
+            DebugBreak();
+            // Busted frame
+        }
+        if (DebugCheckPageArray[foundIndex] == 1)
+        {
+            DebugBreak();
+            // Found duplicate!!
+        }
+
+        DebugCheckPageArray[foundIndex] = 1;
+
+        current = current->nextPFN;
+    }
+    if (count != head->length)
+    {
+        DebugBreak();
+        // Length doesn't match count!
+    }
+}
+
 // Returns the new head of the list.
-Frame* addToFrameList(Frame* head, Frame* item) {
+VOID addToFrameList(frameListHead* head, Frame* item) {
 
-    if (!item) return head;
-    item->nextPFN = head;
+    validateFrameList(head);
 
+    head->length++;
 
-    return item;
+    if (!item)
+    {
+        DebugBreak();
+        item = head->headFrame;
+    }
+    else
+    {
+        item->nextPFN = head->headFrame;
+    }
+
+    head->headFrame = item;
+
+    validateFrameList(head);
 }
 
 // Removes `item` from the list `head` (if present).
 // Returns the new head of the list.
-Frame* removeFromFrameList(Frame* head, Frame* item) {
+VOID removeFromFrameList(frameListHead* headList, Frame* item) {
 
-    if (!head || !item) return head;
+    validateFrameList(headList);
+
+    Frame* head = headList->headFrame;
+
+    if (!head || !item)
+    {
+        DebugBreak();
+        return;
+        // Removing something not on list!
+    }
+
+    headList->length--;
 
     // If the item to remove is the head, pop it off.
     if (head == item) {
-        Frame* newHead = head->nextPFN;
-        head->nextPFN = NULL;
-        return newHead;
+        headList->headFrame = item->nextPFN;
+
+        validateFrameList(headList);
+        return;
     }
 
     // Otherwise, walk the list looking for the item.
@@ -68,19 +136,32 @@ Frame* removeFromFrameList(Frame* head, Frame* item) {
         cur  = cur->nextPFN;
     }
 
+    ASSERT (cur != NULL);
 
-    return head;
+    validateFrameList(headList);
 }
 
 // Pops the first Frame* from *headPtr, returns the popped frame (or NULL if empty).
-Frame* popFirstFrame(Frame** headPtr) {
+Frame* popFirstFrame(frameListHead* headPtr) {
 
-    if (!*headPtr) return NULL;
-    Frame* first = *headPtr;
-    *headPtr = first->nextPFN;
-    first->nextPFN = NULL;
+    validateFrameList(headPtr);
 
-    return first;
+    Frame* frameToPop = headPtr->headFrame;
+
+    if (!frameToPop)
+    {
+        return NULL;
+        // Popping from empty list!
+    }
+
+    headPtr->length--;
+
+
+    headPtr->headFrame = frameToPop->nextPFN;
+    frameToPop->nextPFN = NULL;
+
+    validateFrameList(headPtr);
+    return frameToPop;
 }
 
 VOID
