@@ -95,6 +95,7 @@ typedef struct Frame
     // If this is 1, we are on the modified list, otherwise on the standby list.
     ULONG64 isOnModifiedList: 1;
     ULONG64 diskIndex: 40;
+    ULONG64 isBeingWritten: 1;
 } Frame;
 
 
@@ -119,21 +120,27 @@ typedef struct _THREAD_INFO {
 
 } THREAD_INFO, *PTHREAD_INFO;
 
+typedef struct frameListHead
+{
+    Frame* headFrame;
+    ULONG64 length;
+} frameListHead;
+
 // Variables
 PageTableEntry* pageTable;
 void* vaStartLoc;
 PULONG_PTR physical_page_numbers;
+PULONG_PTR DebugCheckPageArray;
 ULONG_PTR physical_page_count;
 Frame* pfnArray;
 
 // Theres a function called CONTAINING_RECORD that takes a pointer, the NAME of a structure, and a field name.
 // Return value is the pointer to the start of the structure.
 // #TODO bp: Should change this to struct LIST HEAD with List entry, counter for length, and lock.
-Frame* freeList;
-Frame* activeList;
-Frame* modifiedList;
-ULONG64 modifiedListLength;
-Frame* standbyList;
+frameListHead freeList;
+frameListHead activeList;
+frameListHead modifiedList;
+frameListHead standbyList;
 
 void* transferVA;
 void* writeTransferVA;
@@ -187,13 +194,17 @@ CRITICAL_SECTION* GetPTELock(PageTableEntry* pte);
 
 
 
+
+
 // Functions
 PageTableEntry* VAToPageTableEntry(void* virtualAddress);
 void* PageTableEntryToVA(PageTableEntry* entry);
 
-Frame* addToFrameList(Frame* head, Frame* item);
-Frame* removeFromFrameList(Frame* head, Frame* item);
-Frame* popFirstFrame(Frame** headPtr);
+VOID addToFrameList(frameListHead* head, Frame* item);
+VOID removeFromFrameList(frameListHead* headList, Frame* item);
+Frame* popFirstFrame(frameListHead* headPtr);
+
+VOID validateFrameList(frameListHead* head);
 
 
 VOID checkVa(PULONG64 va);

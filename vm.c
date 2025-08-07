@@ -336,6 +336,7 @@ VOID full_virtual_memory_test (VOID)
     physical_page_count = NUMBER_OF_PHYSICAL_PAGES;
 
     physical_page_numbers = malloc (physical_page_count * sizeof (ULONG_PTR));
+    DebugCheckPageArray = malloc (physical_page_count * sizeof (ULONG_PTR));
 
     if (physical_page_numbers == NULL) {
         printf ("full_virtual_memory_test : could not allocate array to hold physical page numbers\n");

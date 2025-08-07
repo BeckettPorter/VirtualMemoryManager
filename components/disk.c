@@ -18,8 +18,9 @@ VOID swapToDisk()
     // But first check if we have enough disk slots to do this, otherwise only get as many off the modified
     // list as I have free disk slots.
     ULONG64 numPagesToActuallySwap = 0;
+    ULONG64 numSlotsFound = 0;
 
-    while (numPagesToActuallySwap < MAX_WRITE_PAGES)
+    while (numSlotsFound < MAX_WRITE_PAGES)
     {
         ULONG64 currentFreeDiskSlot = findFreeDiskSlot();
 
@@ -28,33 +29,36 @@ VOID swapToDisk()
         {
             break;
         }
-        diskSlotsToBatch[numPagesToActuallySwap] = currentFreeDiskSlot;
+        diskSlotsToBatch[numSlotsFound] = currentFreeDiskSlot;
 
-        numPagesToActuallySwap++;
+        numSlotsFound++;
     }
 
     ULONG64 swapFrameNumbers[MAX_WRITE_PAGES];
 
-    for (ULONG64 i = 0; i < numPagesToActuallySwap; i++)
+    acquireLock(&modifiedListLock);
+    for (ULONG64 i = 0; i < numSlotsFound; i++)
     {
-        acquireLock(&modifiedListLock);
+
         Frame* currentFrame = popFirstFrame(&modifiedList);
 
         if (currentFrame == NULL)
         {
-            releaseLock(&modifiedListLock);
-            numPagesToActuallySwap = i;
             break;  // If we don't have any more frames to swap, break out of the loop.
         }
 
-        modifiedListLength--;
-
         // Then set this frame to not be on the modified list anymore.
         currentFrame->isOnModifiedList = 0;
-
-        releaseLock(&modifiedListLock);
+        currentFrame->isBeingWritten = 1;
 
         swapFrameNumbers[i] = findFrameNumberFromFrame(currentFrame);
+        numPagesToActuallySwap++;
+    }
+
+    // Clear out unused disk slots
+    for (ULONG64 i = numPagesToActuallySwap; i < numSlotsFound; i++)
+    {
+        freeDiskSpace[diskSlotsToBatch[i]] = true;
     }
 
     ASSERT(numPagesToActuallySwap != 0);
@@ -65,6 +69,7 @@ VOID swapToDisk()
         printf ("swapToDisk : could not map VA %p to pages\n", writeTransferVA);
 
         DebugBreak();
+        releaseLock(&modifiedListLock);
         return;
     }
 
@@ -80,6 +85,7 @@ VOID swapToDisk()
         if (currentDiskSlot >= NUMBER_OF_DISK_SLOTS) {
             printf("swapToDisk: Invalid disk slot %llu >= %u\n", currentDiskSlot, NUMBER_OF_DISK_SLOTS);
             DebugBreak();
+            releaseLock(&modifiedListLock);
             return;
         }
 
@@ -89,17 +95,27 @@ VOID swapToDisk()
         currentFrame->diskIndex = currentDiskSlot;
 
         acquireLock(&standbyListLock);
-        standbyList = addToFrameList(standbyList, currentFrame);
-        releaseLock(&standbyListLock);
 
-        // Set the disk space we just copied to false to set it as occupied.
-        acquireLock(&diskSpaceLock);
-        ASSERT(freeDiskSpace[currentDiskSlot] == true);
-        freeDiskSpace[currentDiskSlot] = false;
-        releaseLock(&diskSpaceLock);
+        // If we haven't already rescued this frame.
+        if (currentFrame->isBeingWritten == 1)
+        {
+            currentFrame->isBeingWritten = 0;
+            addToFrameList(&standbyList, currentFrame);
+
+            ASSERT(freeDiskSpace[currentDiskSlot] == false);
+
+            releaseLock(&standbyListLock);
+        }
+        else
+        {
+            releaseLock(&standbyListLock);
+        }
     }
 
-    if (!MapUserPhysicalPages(writeTransferVA, numPagesToActuallySwap, NULL)) {
+    releaseLock(&modifiedListLock);
+
+    if (!MapUserPhysicalPages(writeTransferVA, numPagesToActuallySwap, NULL))
+    {
         printf("swapToDisk: Failed to unmap user physical pages!");
         exit(-1);
     }
@@ -125,6 +141,8 @@ ULONG64 findFreeDiskSlot()
                 diskSearchStartIndex = 0;
             }
 
+            // Set this to in use now.
+            freeDiskSpace[currentSearchIndex] = false;
             releaseLock(&diskSpaceLock);
             return currentSearchIndex;
         }
@@ -166,7 +184,6 @@ VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom)
     // If the slot in disk space we are trying to fill from is not already in use, debug break
     // because the contents should be there.
     acquireLock(&diskSpaceLock);
-    // #TODO bp: this gets triggered sometimes, fix bug
     ASSERT(freeDiskSpace[diskIndexToTransferFrom] == false);
 
     // Set the disk space we just copied from to true to clear it from being used.

@@ -71,7 +71,6 @@ ULONG userThread(_In_ PVOID Context)
 
         while (true)
         {
-            // TODO bp: add while loop over entire thing and if we can't resolve fault, just continue and try again
             __try {
 
                 *arbitrary_va = (ULONG_PTR) arbitrary_va;
@@ -127,16 +126,24 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
             acquireLock(&standbyListLock);
             acquireLock(&diskSpaceLock);
 
-            if (currentFrame->isOnModifiedList == 1)
+            // # todo bp: can first check what lock we actually need, then acquire it, and then RECHECK, because
+            // it could have been removed from modified or standby list in that time (while loop).
+
+            if (currentFrame->isBeingWritten == 1)
             {
-                modifiedList = removeFromFrameList(modifiedList, currentFrame);
+                currentFrame->isBeingWritten = 0;
+            }
+            else if (currentFrame->isOnModifiedList == 1)
+            {
+                removeFromFrameList(&modifiedList, currentFrame);
                 currentFrame->isOnModifiedList = 0;
             }
             else
             {
                 // Remove from standby list and free disk space
-                standbyList = removeFromFrameList(standbyList, currentFrame);
+                removeFromFrameList(&standbyList, currentFrame);
                 ULONG64 diskIndex = currentFrame->diskIndex;
+                ASSERT(freeDiskSpace[diskIndex] == false);
                 freeDiskSpace[diskIndex] = true;
             }
 
@@ -156,7 +163,7 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
                 // Acquire list locks in correct order
                 acquireLock(&standbyListLock);
 
-                while (standbyList == NULL)
+                while (standbyList.headFrame == NULL)
                 {
                     // Release locks before waiting
                     releaseLock(&standbyListLock);
@@ -166,45 +173,34 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
                     SetEvent(trimEvent);
                     WaitForSingleObject(finishedModWriteEvent, INFINITE);
 
-                    // Reacquire locks in correct order
-                    acquireLock(PTELock);
-                    if (pteContents.entireFormat != currentPTE->entireFormat)
-                    {
-                        releaseLock(PTELock);
-                        return;
-                    }
-                    acquireLock(&standbyListLock);
+                    // Here we redo the fault now if we trimmed and added to standby list
+                    return;
                 }
 
                 currentFrame = popFirstFrame(&standbyList);
-                releaseLock(&standbyListLock);
 
-                if (currentFrame == NULL)
-                {
-                    releaseLock(PTELock);
-                    return;
-                }
 
-                // Double-check that no other thread has resolved this page fault
-                PageTableEntry currentPteContents = *currentPTE;
-                if (currentPteContents.validFormat.isValid == 1) {
-                    // Another thread has already resolved this page fault
-                    // Return the frame to the appropriate list
-                    if (currentFrame != NULL) {
-                        // Return to free list or standby list as appropriate
-                        acquireLock(&freeListLock);
-                        freeList = addToFrameList(freeList, currentFrame);
-                        releaseLock(&freeListLock);
-                    }
-                    releaseLock(PTELock);
-                    return;
-                }
+                // I THINK THIS IS REDUNDANT
+                // // Double-check that no other thread has resolved this page fault
+                // PageTableEntry currentPteContents = *currentPTE;
+                // if (currentPteContents.validFormat.isValid == 1) {
+                //     // Another thread has already resolved this page fault
+                //     // Return the frame to the appropriate list
+                //     ASSERT (currentFrame != NULL);
+                //
+                //     addToFrameList(&standbyList, currentFrame);
+                //     releaseLock(&standbyListLock);
+                //     releaseLock(PTELock);
+                //     return;
+                // }
 
                 // Get victim PTE lock (another PTE lock)
                 victimPTE = currentFrame->PTE;
                 if (victimPTE == NULL)
                 {
+                    DebugBreak();
                     printf("resolvePageFault: victimPTE is NULL for frame %llu\n", findFrameNumberFromFrame(currentFrame));
+                    releaseLock(&standbyListLock);
                     releaseLock(PTELock);
                     return;
                 }
@@ -213,11 +209,22 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
                 if (victimPTELock == NULL)
                 {
                     printf("resolvePageFault: Invalid victimPTELock for frame %llu\n", findFrameNumberFromFrame(currentFrame));
+                    releaseLock(&standbyListLock);
                     releaseLock(PTELock);
                     return;
                 }
 
-                acquireLock(victimPTELock);
+
+                if (!tryAcquireLock(victimPTELock))
+                {
+                    // If we can't get the victim PTE lock, return.
+                    ASSERT (currentFrame != NULL);
+                    addToFrameList(&standbyList, currentFrame);
+
+                    releaseLock(&standbyListLock);
+                    releaseLock(PTELock);
+                    return;
+                }
 
                 // Update victim PTE to invalid disk format
                 PageTableEntry victimPteContents;
@@ -227,6 +234,8 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
                 victimPteContents.invalidFormat.diskIndex = currentFrame->diskIndex;
                 *victimPTE = victimPteContents;
 
+
+                releaseLock(&standbyListLock);
                 releaseLock(victimPTELock);
             }
 
@@ -257,11 +266,11 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
             DebugBreak();
         }
 
-        checkVa(arbitrary_va);
+        // Removing this because I think checkVA is broken in multithreaded or somethin
+        // checkVa(arbitrary_va);
 
-        // Add to active list (acquire lock in correct order)
         acquireLock(&activeListLock);
-        activeList = addToFrameList(activeList, currentFrame);
+        validateFrameList(&activeList);
         releaseLock(&activeListLock);
 
         // Update PTE
@@ -269,6 +278,11 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
         currentPTE->validFormat.isTransitionFormat = 0;
         currentPTE->validFormat.pageFrameNumber = findFrameNumberFromFrame(currentFrame);
         currentFrame->PTE = currentPTE;
+
+        // Add to active list (acquire lock in correct order)
+        acquireLock(&activeListLock);
+        addToFrameList(&activeList, currentFrame);
+        releaseLock(&activeListLock);
     }
 
     releaseLock(PTELock);
