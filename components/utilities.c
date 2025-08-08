@@ -34,9 +34,7 @@ void* PageTableEntryToVA(PageTableEntry* entry)
 
 VOID validateFrameList(frameListHead* head)
 {
-    return;
     memset (DebugCheckPageArray, 0, physical_page_count * sizeof (ULONG_PTR));
-
 
     ULONG64 count = 0;
     ULONG64 foundIndex = 0;
@@ -77,10 +75,8 @@ VOID validateFrameList(frameListHead* head)
 }
 
 // Returns the new head of the list.
-VOID addToFrameList(frameListHead* head, Frame* item) {
-
-    validateFrameList(head);
-
+VOID addToFrameList(frameListHead* head, Frame* item)
+{
     head->length++;
 
     if (!item)
@@ -94,16 +90,12 @@ VOID addToFrameList(frameListHead* head, Frame* item) {
     }
 
     head->headFrame = item;
-
-    validateFrameList(head);
 }
 
 // Removes `item` from the list `head` (if present).
 // Returns the new head of the list.
-VOID removeFromFrameList(frameListHead* headList, Frame* item) {
-
-    validateFrameList(headList);
-
+VOID removeFromFrameList(frameListHead* headList, Frame* item)
+{
     Frame* head = headList->headFrame;
 
     if (!head || !item)
@@ -120,7 +112,6 @@ VOID removeFromFrameList(frameListHead* headList, Frame* item) {
         headList->headFrame = item->nextPFN;
         item->nextPFN = NULL;
         headList->length--;
-        validateFrameList(headList);
         return;
     }
 
@@ -132,7 +123,6 @@ VOID removeFromFrameList(frameListHead* headList, Frame* item) {
             prev->nextPFN = cur->nextPFN;
             cur->nextPFN  = NULL;
             headList->length--;
-            validateFrameList(headList);
             return;
         }
         prev = cur;
@@ -144,10 +134,8 @@ VOID removeFromFrameList(frameListHead* headList, Frame* item) {
 }
 
 // Pops the first Frame* from *headPtr, returns the popped frame (or NULL if empty).
-Frame* popFirstFrame(frameListHead* headPtr) {
-
-    validateFrameList(headPtr);
-
+Frame* popFirstFrame(frameListHead* headPtr)
+{
     Frame* frameToPop = headPtr->headFrame;
 
     if (!frameToPop)
@@ -162,7 +150,6 @@ Frame* popFirstFrame(frameListHead* headPtr) {
     headPtr->headFrame = frameToPop->nextPFN;
     frameToPop->nextPFN = NULL;
 
-    validateFrameList(headPtr);
     return frameToPop;
 }
 
@@ -170,10 +157,10 @@ BOOL listContains(frameListHead* headList, Frame* item)
 {
     Frame* cur = headList->headFrame;
     while (cur) {
-        if (cur == item) return TRUE;
+        if (cur == item) return true;
         cur = cur->nextPFN;
     }
-    return FALSE;
+    return false;
 }
 
 
@@ -188,11 +175,11 @@ checkVa(PULONG64 va) {
     }
 }
 
-boolean wipePage(Frame* frameToWipe)
+boolean wipePage(Frame* frameToWipe, PTHREAD_INFO context)
 {
     ULONG64 frameNumberToWipe = findFrameNumberFromFrame(frameToWipe);
 
-    PVOID transferVAToUse = acquireTransferVA();
+    PVOID transferVAToUse = acquireTransferVA(context);
 
     //ASSERT (FALSE);
     if (MapUserPhysicalPages (transferVAToUse, 1, &frameNumberToWipe) == FALSE) {
@@ -207,38 +194,32 @@ boolean wipePage(Frame* frameToWipe)
 
     memset(transferVAToUse, 0, PAGE_SIZE);
 
-    releaseTransferVALock();
-
     return true;
 }
 
-PVOID acquireTransferVA()
+PVOID acquireTransferVA(PTHREAD_INFO context)
 {
-    acquireLock(&transferVALock);
+    ULONG64* transferVAIndex = &context->transferVAIndex;
+    PVOID allThreadTransferVAs = context->perThreadTransferVAs;
 
     // Check bounds before incrementing
-    if (currentTransferVAIndex >= TRANSFER_VA_COUNT - 1)
+    if (*transferVAIndex > TRANSFER_VA_COUNT - 1)
     {
-        flushTransferVAs();
-        currentTransferVAIndex = 0;
+        flushTransferVAs(allThreadTransferVAs);
+        *transferVAIndex = 0;
     }
-    
-    currentTransferVAIndex++;
 
-    PVOID result = (PVOID) ((ULONG_PTR)transferVA + currentTransferVAIndex * PAGE_SIZE);
 
+    PVOID result = (PVOID) ((ULONG_PTR)allThreadTransferVAs + *transferVAIndex * PAGE_SIZE);
+
+    (*transferVAIndex)++;
     return result;
 }
 
-VOID releaseTransferVALock()
-{
-    releaseLock(&transferVALock);
-}
-
 // Flush all of the transfer VA's that we have mapped.
-VOID flushTransferVAs()
+VOID flushTransferVAs(PVOID allThreadTransferVAs)
 {
-    if (!MapUserPhysicalPages(transferVA, currentTransferVAIndex + 1, NULL)) {
+    if (!MapUserPhysicalPages(allThreadTransferVAs, TRANSFER_VA_COUNT, NULL)) {
         printf("flushTransferVAs: Failed to unmap transfer VA's!");
         exit(-1);
     }

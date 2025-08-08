@@ -120,7 +120,6 @@ VOID createEvents()
 
 VOID initCriticalSections()
 {
-    InitializeCriticalSection (&transferVALock);
     InitializeCriticalSection (&freeListLock);
     InitializeCriticalSection (&activeListLock);
     InitializeCriticalSection (&modifiedListLock);
@@ -147,6 +146,17 @@ VOID createThreads()
     {
         currentThreadInfo = &threadInfoArray[currentThreadNumber];
         currentThreadInfo->ThreadNumber = currentThreadNumber;
+
+        // Initilize per thread transfer VAs
+        currentThreadInfo->perThreadTransferVAs = VirtualAlloc2 (NULL,
+                       NULL,
+                       PAGE_SIZE * TRANSFER_VA_COUNT,
+                       MEM_RESERVE | MEM_PHYSICAL,
+                       PAGE_READWRITE,
+                       &sharablePhysicalPages,
+                       1);
+
+        currentThreadInfo->transferVAIndex = 0;
 
         currentThreadInfo->ThreadHandle = createNewThread(userThread, currentThreadInfo);
 

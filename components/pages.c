@@ -36,7 +36,6 @@ VOID evictFrame()
     acquireLock(&activeListLock);
     while (numPagesToEvict < MAX_WRITE_PAGES)
     {
-        validateFrameList(&activeList);
 
         // Break from the while loop if we don't have any active frames to evict
         if (activeList.headFrame == NULL)
@@ -60,7 +59,6 @@ VOID evictFrame()
         }
 
         activeList.length--;
-        validateFrameList(&activeList);
 
         evictFrames[numPagesToEvict] = currentFrame;
         evictVAs[numPagesToEvict] = PageTableEntryToVA(currentFrame->PTE);
