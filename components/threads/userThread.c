@@ -13,7 +13,6 @@
 #include "../disk.h"
 
 
-
 ULONG userThread(_In_ PVOID Context)
 {
     PULONG_PTR arbitrary_va;
@@ -78,7 +77,7 @@ ULONG userThread(_In_ PVOID Context)
 
             } __except (EXCEPTION_EXECUTE_HANDLER) {
 
-                resolvePageFault(arbitrary_va);
+                resolvePageFault(arbitrary_va, Context);
             }
         }
     }
@@ -92,7 +91,7 @@ ULONG userThread(_In_ PVOID Context)
 }
 
 
-VOID resolvePageFault(PULONG_PTR arbitrary_va)
+VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
 {
     PageTableEntry* currentPTE = VAToPageTableEntry(arbitrary_va);
     ULONG64 frameNumber;
@@ -188,6 +187,7 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
                 }
 
                 currentFrame = popFirstFrame(&standbyList);
+                releaseLock(&standbyListLock);
 
                 // Get victim PTE lock (another PTE lock)
                 victimPTE = currentFrame->PTE;
@@ -195,7 +195,6 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
                 {
                     DebugBreak();
                     printf("resolvePageFault: victimPTE is NULL for frame %llu\n", findFrameNumberFromFrame(currentFrame));
-                    releaseLock(&standbyListLock);
                     releaseLock(PTELock);
                     return;
                 }
@@ -204,7 +203,6 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
                 if (victimPTELock == NULL)
                 {
                     printf("resolvePageFault: Invalid victimPTELock for frame %llu\n", findFrameNumberFromFrame(currentFrame));
-                    releaseLock(&standbyListLock);
                     releaseLock(PTELock);
                     return;
                 }
@@ -215,9 +213,10 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
                     // If we can't get the victim PTE lock, return.
                     ASSERT (currentFrame != NULL);
 
+                    acquireLock(&standbyListLock);
                     addToFrameList(&standbyList, currentFrame);
-
                     releaseLock(&standbyListLock);
+
                     releaseLock(PTELock);
                     return;
                 }
@@ -230,8 +229,6 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
                 victimPteContents.invalidFormat.diskIndex = currentFrame->diskIndex;
                 *victimPTE = victimPteContents;
 
-
-                releaseLock(&standbyListLock);
                 releaseLock(victimPTELock);
             }
 
@@ -242,7 +239,7 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
             {
                 if (retrievedFromStandbyList)
                 {
-                    if (wipePage(currentFrame) == false)
+                    if (wipePage(currentFrame, context) == false)
                     {
                         printf("wipePage failed in full_virtual_memory_test\n");
                         DebugBreak();
@@ -252,7 +249,7 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
             else
             {
                 ULONG64 diskIndex = pteContents.invalidFormat.diskIndex;
-                swapFromDisk(currentFrame, diskIndex);
+                swapFromDisk(currentFrame, diskIndex, context);
             }
         }
 
@@ -265,9 +262,6 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va)
         // Removing this because I think checkVA is broken in multithreaded or somethin
         // checkVa(arbitrary_va);
 
-        acquireLock(&activeListLock);
-        validateFrameList(&activeList);
-        releaseLock(&activeListLock);
 
         // Update PTE
         currentPTE->validFormat.isValid = 1;

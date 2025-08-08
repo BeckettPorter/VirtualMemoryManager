@@ -106,6 +106,9 @@ typedef struct _THREAD_INFO {
 
     ULONG ThreadType;
 
+    PVOID perThreadTransferVAs;
+    ULONG64 transferVAIndex;
+
 #if 0
 
     //
@@ -168,8 +171,6 @@ ULONG64 numActiveUserThreads;
 
 
 // Locks
-CRITICAL_SECTION transferVALock;
-
 CRITICAL_SECTION freeListLock;
 CRITICAL_SECTION activeListLock;
 CRITICAL_SECTION modifiedListLock;
@@ -208,11 +209,11 @@ VOID validateFrameList(frameListHead* head);
 
 VOID checkVa(PULONG64 va);
 
-boolean wipePage(Frame* frameToWipe);
+boolean wipePage(Frame* frameToWipe, PTHREAD_INFO context);
 
-PVOID acquireTransferVA();
+PVOID acquireTransferVA(PTHREAD_INFO context);
 VOID releaseTransferVALock();
-VOID flushTransferVAs();
+VOID flushTransferVAs(PVOID allThreadTransferVAs);
 
 VOID shutdownUserThread(int userThreadIndex);
 
