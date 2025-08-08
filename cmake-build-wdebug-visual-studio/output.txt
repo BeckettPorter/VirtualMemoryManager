@@ -119,3 +119,434 @@ Thread id 1 finished
 full_virtual_memory_test : finished accessing random virtual addresses
 full_virtual_memory_test : time taken 10438ms
  
+Thread id 0 started
+Thread id 1 started
+Thread id 1 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 11625ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 0 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 10422ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 1 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 9781ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 0 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 10062ms
+ 
+Thread id 0 started
+Thread id 2 started
+Thread id 1 started
+Thread id 0 finished
+Thread id 1 finished
+Thread id 2 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 9375ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 1 finished
+Thread id 2 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 6703ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 1 finished
+Thread id 0 finished
+Thread id 2 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 6718ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 1 finished
+Thread id 2 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 6906ms
+ 
+Thread id 0 started
+Thread id 2 started
+Thread id 1 started
+Thread id 1 finished
+Thread id 0 finished
+Thread id 2 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 6969ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 1 finished
+Thread id 0 finished
+Thread id 2 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 6843ms
+ 
+Thread id 0 started
+Thread id 2 started
+Thread id 1 started
+Thread id 1 finished
+Thread id 0 finished
+Thread id 2 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 6782ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 0 finished
+Thread id 2 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 6813ms
+ 
+Thread id 0 started
+Thread id 2 started
+Thread id 1 started
+Thread id 1 finished
+Thread id 0 finished
+Thread id 2 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 6812ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 1 finished
+Thread id 2 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 7078ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 0 finished
+Thread id 1 finished
+Thread id 2 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 8594ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 1 finished
+Thread id 0 finished
+Thread id 2 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 7282ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 2 finished
+Thread id 0 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 6812ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 0 finished
+Thread id 2 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 7015ms
+ 
+Thread id 0 started
+Thread id 2 started
+Thread id 1 started
+Thread id 2 finished
+Thread id 1 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 7063ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 1 finished
+Thread id 0 finished
+Thread id 2 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 9813ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 1 finished
+Thread id 2 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 9766ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 1 finished
+Thread id 0 finished
+Thread id 2 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 7640ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 1 finished
+Thread id 2 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 8109ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 1 finished
+Thread id 0 finished
+Thread id 2 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 8140ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 2 finished
+Thread id 0 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 10531ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 1 finished
+Thread id 2 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 6984ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 2 finished
+Thread id 0 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 7015ms
+ 
+Thread id 0 started
+Thread id 2 started
+Thread id 1 started
+Thread id 2 finished
+Thread id 0 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 7031ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 1 finished
+Thread id 2 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 7062ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 2 finished
+Thread id 1 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 6984ms
+ 
+Thread id 1 started
+Thread id 0 started
+Thread id 2 started
+Thread id 2 finished
+Thread id 1 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 7110ms
+ 
+Thread id 0 started
+Thread id 2 started
+Thread id 1 started
+Thread id 2 finished
+Thread id 0 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 6954ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 1 finished
+Thread id 0 finished
+Thread id 2 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 6813ms
+ 
+Thread id 1 started
+Thread id 0 started
+Thread id 2 started
+Thread id 1 finished
+Thread id 2 finished
+Thread id 0 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 7438ms
+ 
+Thread id 0 started
+Thread id 7 started
+Thread id 1 started
+Thread id 2 started
+Thread id 4 started
+Thread id 6 started
+Thread id 5 started
+Thread id 3 started
+Thread id 4 finished
+Thread id 7 finished
+Thread id 0 finished
+Thread id 6 finished
+Thread id 5 finished
+Thread id 3 finished
+Thread id 2 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 20454ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 2 started
+Thread id 4 started
+Thread id 5 started
+Thread id 6 started
+Thread id 7 started
+Thread id 3 started
+Thread id 0 finished
+Thread id 6 finished
+Thread id 1 finished
+Thread id 7 finished
+Thread id 5 finished
+Thread id 4 finished
+Thread id 3 finished
+Thread id 2 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 14485ms
+ 
+Thread id 0 started
+Thread id 2 started
+Thread id 1 started
+Thread id 3 started
+Thread id 4 started
+Thread id 5 started
+Thread id 6 started
+Thread id 7 started
+Thread id 0 finished
+Thread id 1 finished
+Thread id 7 finished
+Thread id 6 finished
+Thread id 5 finished
+Thread id 4 finished
+Thread id 2 finished
+Thread id 3 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 13906ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 5 started
+Thread id 2 started
+Thread id 6 started
+Thread id 7 started
+Thread id 3 started
+Thread id 4 started
+Thread id 2 finished
+Thread id 3 finished
+Thread id 4 finished
+Thread id 7 finished
+Thread id 5 finished
+Thread id 6 finished
+Thread id 0 finished
+Thread id 1 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 13547ms
+ 
+Thread id 0 started
+Thread id 1 started
+Thread id 3 started
+Thread id 4 started
+Thread id 5 started
+Thread id 6 started
+Thread id 7 started
+Thread id 2 started
+Thread id 0 finished
+Thread id 6 finished
+Thread id 7 finished
+Thread id 4 finished
+Thread id 1 finished
+Thread id 5 finished
+Thread id 2 finished
+Thread id 3 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 14484ms
+ 
+Thread id 0 started
+Thread id 3 started
+Thread id 2 started
+Thread id 4 started
+Thread id 5 started
+Thread id 6 started
+Thread id 7 started
+Thread id 1 started
+Thread id 6 finished
+Thread id 0 finished
+Thread id 7 finished
+Thread id 1 finished
+Thread id 4 finished
+Thread id 5 finished
+Thread id 2 finished
+Thread id 3 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 13968ms
+ 
+Thread id 0 started
+Thread id 2 started
+Thread id 1 started
+Thread id 3 started
+Thread id 4 started
+Thread id 5 started
+Thread id 6 started
+Thread id 7 started
+Thread id 7 finished
+Thread id 0 finished
+Thread id 4 finished
+Thread id 6 finished
+Thread id 5 finished
+Thread id 1 finished
+Thread id 2 finished
+Thread id 3 finished
+full_virtual_memory_test : finished accessing random virtual addresses
+full_virtual_memory_test : time taken 14359ms
+ 
