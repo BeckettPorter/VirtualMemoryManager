@@ -29,7 +29,7 @@
 #define EVENT_START_ON          TRUE
 #define EVENT_START_OFF         FALSE
 
-#define NUMBER_USER_THREADS 2
+#define NUMBER_USER_THREADS 8
 #define NUMBER_TRIM_THREADS 1
 #define NUMBER_DISK_THREADS 1
 #define TOTAL_NUMBER_OF_THREADS (NUMBER_USER_THREADS + NUMBER_TRIM_THREADS + NUMBER_DISK_THREADS)
@@ -38,8 +38,6 @@
 #define USER_THREAD 0
 #define TRIM_THREAD 1
 #define DISK_THREAD 2
-
-#define PTE_LOCK_TABLE_SIZE 1024
 
 #define SHUTDOWN_PROGRAM_EVENT_INDEX 1
 
@@ -203,6 +201,7 @@ void* PageTableEntryToVA(PageTableEntry* entry);
 VOID addToFrameList(frameListHead* head, Frame* item);
 VOID removeFromFrameList(frameListHead* headList, Frame* item);
 Frame* popFirstFrame(frameListHead* headPtr);
+BOOL listContains(frameListHead* headList, Frame* item);
 
 VOID validateFrameList(frameListHead* head);
 

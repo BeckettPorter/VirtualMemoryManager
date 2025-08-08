@@ -113,12 +113,13 @@ VOID removeFromFrameList(frameListHead* headList, Frame* item) {
         // Removing something not on list!
     }
 
-    headList->length--;
+
 
     // If the item to remove is the head, pop it off.
     if (head == item) {
         headList->headFrame = item->nextPFN;
-
+        item->nextPFN = NULL;
+        headList->length--;
         validateFrameList(headList);
         return;
     }
@@ -130,15 +131,16 @@ VOID removeFromFrameList(frameListHead* headList, Frame* item) {
         if (cur == item) {
             prev->nextPFN = cur->nextPFN;
             cur->nextPFN  = NULL;
-            break;
+            headList->length--;
+            validateFrameList(headList);
+            return;
         }
         prev = cur;
         cur  = cur->nextPFN;
     }
 
-    ASSERT (cur != NULL);
-
-    validateFrameList(headList);
+    // If this occurs we didn't find what we were looking for.
+    DebugBreak();
 }
 
 // Pops the first Frame* from *headPtr, returns the popped frame (or NULL if empty).
@@ -163,6 +165,17 @@ Frame* popFirstFrame(frameListHead* headPtr) {
     validateFrameList(headPtr);
     return frameToPop;
 }
+
+BOOL listContains(frameListHead* headList, Frame* item)
+{
+    Frame* cur = headList->headFrame;
+    while (cur) {
+        if (cur == item) return TRUE;
+        cur = cur->nextPFN;
+    }
+    return FALSE;
+}
+
 
 VOID
 checkVa(PULONG64 va) {
