@@ -160,7 +160,7 @@ ULONG64 findFreeDiskSlot()
     return -1;
 }
 
-VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom)
+VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom, PVOID context)
 {
     // Add bounds checking to prevent memory corruption
     if (diskIndexToTransferFrom >= NUMBER_OF_DISK_SLOTS) {
@@ -172,7 +172,7 @@ VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom)
     // Use same transfer VA for now, multithreaded might need a different one
     ULONG64 frameNumber = findFrameNumberFromFrame(frameToFill);
 
-    PVOID transferVAToUse = acquireTransferVA();
+    PVOID transferVAToUse = acquireTransferVA(context);
 
     if (MapUserPhysicalPages (transferVAToUse, 1, &frameNumber) == FALSE) {
         printf ("swapFromDisk : could not map VA %p to page %llX\n", transferVAToUse,
@@ -191,6 +191,4 @@ VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom)
     releaseLock(&diskSpaceLock);
 
     memcpy(transferVAToUse, totalDiskSpace + diskIndexToTransferFrom * PAGE_SIZE, PAGE_SIZE);
-
-    releaseTransferVALock();
 }

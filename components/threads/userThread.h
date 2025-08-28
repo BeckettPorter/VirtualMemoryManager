@@ -11,6 +11,6 @@
 
 ULONG userThread(_In_ PVOID Context);
 
-VOID resolvePageFault(PULONG_PTR arbitrary_va);
+VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context);
 
 #endif //USERTHREAD_H
