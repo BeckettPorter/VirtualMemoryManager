@@ -18,7 +18,7 @@ VOID swapToDisk();
 
 ULONG64 findFreeDiskSlot();
 
-VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom);
+VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom, PVOID context);
 
 ULONG64* diskSlotsToBatch;
 
