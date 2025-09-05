@@ -7,15 +7,26 @@
 
 
 #define PAGE_SIZE                   4096
+#define KB(x)                       ((x) * 1024)
 #define MB(x)                       ((x) * 1024 * 1024)
 #define GB(x)                       ((x) * 1024ULL * 1024 * 1024)
-#define VIRTUAL_ADDRESS_SIZE        MB(16)
+
+#define VIRTUAL_ADDRESS_SIZE        MB(32)
 #define VIRTUAL_ADDRESS_SIZE_IN_UNSIGNED_CHUNKS        (VIRTUAL_ADDRESS_SIZE / sizeof (ULONG_PTR))
-#define NUMBER_OF_PHYSICAL_PAGES   ((VIRTUAL_ADDRESS_SIZE / PAGE_SIZE) / 64)
+
+#define NUM_PTES ((VIRTUAL_ADDRESS_SIZE / PAGE_SIZE))
+
+#define PHYS_TO_VIRTUAL_RATIO (32)
+#define NUMBER_OF_PHYSICAL_PAGES   ((VIRTUAL_ADDRESS_SIZE / PAGE_SIZE) / PHYS_TO_VIRTUAL_RATIO)
+
+
 #define NUMBER_OF_VIRTUAL_PAGES (VIRTUAL_ADDRESS_SIZE / PAGE_SIZE)
+
+
+
 #define MAX_WRITE_PAGES 16
-#define TRANSFER_VA_COUNT 16
-#define NUMBER_OF_DISK_SLOTS 4096
+#define TRANSFER_VA_COUNT 32
+#define NUMBER_OF_DISK_SLOTS (NUM_PTES - NUMBER_OF_PHYSICAL_PAGES + 2)
 #define TEST_ITERATIONS MB(1)
 
 // Threads
