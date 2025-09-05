@@ -55,6 +55,21 @@ VOID swapToDisk()
         numPagesToActuallySwap++;
     }
 
+    // If there are no pages to swap, free any reserved disk slots and return.
+    if (numPagesToActuallySwap == 0)
+    {
+        // Release list lock before taking diskSpaceLock to respect lock hierarchy
+        releaseLock(&modifiedListLock);
+
+        acquireLock(&diskSpaceLock);
+        for (ULONG64 i = 0; i < numSlotsFound; i++)
+        {
+            freeDiskSpace[diskSlotsToBatch[i]] = true;
+        }
+        releaseLock(&diskSpaceLock);
+        return;
+    }
+
     // Clear out unused disk slots
     for (ULONG64 i = numPagesToActuallySwap; i < numSlotsFound; i++)
     {

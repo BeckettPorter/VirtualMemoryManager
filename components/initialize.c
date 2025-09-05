@@ -82,8 +82,12 @@ VOID initDiskSpace()
                        &sharablePhysicalPages,
                        1);
 
-    // #TODO bp: this can be reduced
-    totalDiskSpace = malloc(VIRTUAL_ADDRESS_SIZE);
+    // Sanity: virtual must be larger than physical
+    ASSERT(NUMBER_OF_VIRTUAL_PAGES > NUMBER_OF_PHYSICAL_PAGES);
+
+    // Allocate disk space sized to the number of slots
+    ULONG64 diskBytes = (ULONG64)NUMBER_OF_DISK_SLOTS * (ULONG64)PAGE_SIZE;
+    totalDiskSpace = malloc((size_t)diskBytes);
     freeDiskSpace = malloc(NUMBER_OF_DISK_SLOTS * sizeof(boolean));
     diskSearchStartIndex = 0;
 

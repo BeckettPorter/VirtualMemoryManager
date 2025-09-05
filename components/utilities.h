@@ -11,22 +11,25 @@
 #define MB(x)                       ((x) * 1024 * 1024)
 #define GB(x)                       ((x) * 1024ULL * 1024 * 1024)
 
-#define VIRTUAL_ADDRESS_SIZE        MB(32)
-#define VIRTUAL_ADDRESS_SIZE_IN_UNSIGNED_CHUNKS        (VIRTUAL_ADDRESS_SIZE / sizeof (ULONG_PTR))
-
-#define NUM_PTES ((VIRTUAL_ADDRESS_SIZE / PAGE_SIZE))
-
-#define PHYS_TO_VIRTUAL_RATIO (32)
-#define NUMBER_OF_PHYSICAL_PAGES   ((VIRTUAL_ADDRESS_SIZE / PAGE_SIZE) / PHYS_TO_VIRTUAL_RATIO)
 
 
-#define NUMBER_OF_VIRTUAL_PAGES (VIRTUAL_ADDRESS_SIZE / PAGE_SIZE)
 
+// Floating ratio: physical/virtual. Example: 0.8 => virtual = physical / 0.8 = 1.25x
+#define PHYS_TO_VIRTUAL_RATIO       (0.8)
+
+#define NUMBER_OF_PHYSICAL_PAGES    (GB(1) / PAGE_SIZE)
+
+// Compute counts using double for the ratio, then cast to 64-bit
+#define NUMBER_OF_VIRTUAL_PAGES                         ((ULONG64)((NUMBER_OF_PHYSICAL_PAGES) / (PHYS_TO_VIRTUAL_RATIO)))
+
+#define VIRTUAL_ADDRESS_SIZE                            (NUMBER_OF_VIRTUAL_PAGES * PAGE_SIZE)
+
+#define VIRTUAL_ADDRESS_SIZE_IN_UNSIGNED_CHUNKS         (VIRTUAL_ADDRESS_SIZE / sizeof (ULONG_PTR))
 
 
 #define MAX_WRITE_PAGES 16
 #define TRANSFER_VA_COUNT 32
-#define NUMBER_OF_DISK_SLOTS (NUM_PTES - NUMBER_OF_PHYSICAL_PAGES + 2)
+#define NUMBER_OF_DISK_SLOTS (NUMBER_OF_VIRTUAL_PAGES - NUMBER_OF_PHYSICAL_PAGES + 2)
 #define TEST_ITERATIONS MB(1)
 
 // Threads

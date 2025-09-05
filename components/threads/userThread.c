@@ -43,7 +43,7 @@ ULONG userThread(_In_ PVOID Context)
         random_number = (unsigned) (ReadTimeStampCounter() >> 4);
 
 
-        virtual_address_size = 64 * physical_page_count * PAGE_SIZE;
+        virtual_address_size = VIRTUAL_ADDRESS_SIZE;
 
         random_number %= virtual_address_size / sizeof (ULONG_PTR);
 
