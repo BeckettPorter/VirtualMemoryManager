@@ -9,6 +9,7 @@
 #include <windows.h>
 #include "../pages.h"
 
+
 ULONG diskThread(_In_ PVOID Context)
 {
     HANDLE eventsToWaitOn[2];
