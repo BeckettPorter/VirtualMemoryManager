@@ -90,6 +90,10 @@ VOID addToFrameList(frameListHead* head, Frame* item)
     }
 
     head->headFrame = item;
+    if (head->tailFrame == NULL)
+    {
+        head->tailFrame = item;
+    }
 }
 
 // Removes `item` from the list `head` (if present).
@@ -150,6 +154,11 @@ Frame* popFirstFrame(frameListHead* headPtr)
     headPtr->headFrame = frameToPop->nextPFN;
     frameToPop->nextPFN = NULL;
 
+    if (headPtr->headFrame == NULL)
+    {
+        headPtr->tailFrame = NULL;
+    }
+
     return frameToPop;
 }
 
@@ -161,6 +170,29 @@ BOOL listContains(frameListHead* headList, Frame* item)
         cur = cur->nextPFN;
     }
     return false;
+}
+
+// Append to tail helper for O(1) enqueue
+VOID addToFrameListTail(frameListHead* head, Frame* item)
+{
+    if (!item)
+    {
+        DebugBreak();
+        return;
+    }
+
+    item->nextPFN = NULL;
+    if (head->tailFrame)
+    {
+        head->tailFrame->nextPFN = item;
+    }
+    else
+    {
+        head->headFrame = item;
+    }
+
+    head->tailFrame = item;
+    head->length++;
 }
 
 

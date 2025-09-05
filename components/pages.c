@@ -36,29 +36,13 @@ VOID evictFrame()
     acquireLock(&activeListLock);
     while (numPagesToEvict < MAX_WRITE_PAGES)
     {
-
         // Break from the while loop if we don't have any active frames to evict
         if (activeList.headFrame == NULL)
         {
             break;
         }
 
-        Frame* previousFrame = NULL;
-        Frame* currentFrame = activeList.headFrame;
-
-        // Walk through our PFNs until we reach the end of the array, moving them back one spot because we removed one.
-        while (currentFrame->nextPFN != NULL) {
-            previousFrame = currentFrame;
-            currentFrame = currentFrame->nextPFN;
-        }
-
-        if (previousFrame == NULL) {
-            activeList.headFrame = NULL;
-        } else {
-            previousFrame->nextPFN = NULL;
-        }
-
-        activeList.length--;
+        Frame* currentFrame = popFirstFrame(&activeList);
 
         evictFrames[numPagesToEvict] = currentFrame;
         evictVAs[numPagesToEvict] = PageTableEntryToVA(currentFrame->PTE);

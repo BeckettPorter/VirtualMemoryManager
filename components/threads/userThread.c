@@ -271,7 +271,7 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
 
         // Add to active list (acquire lock in correct order)
         acquireLock(&activeListLock);
-        addToFrameList(&activeList, currentFrame);
+        addToFrameListTail(&activeList, currentFrame);
         releaseLock(&activeListLock);
     }
 

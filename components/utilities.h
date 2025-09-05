@@ -14,12 +14,11 @@
 
 
 
-// Floating ratio: physical/virtual. Example: 0.8 => virtual = physical / 0.8 = 1.25x
+// ratio of physical to virtual memory
 #define PHYS_TO_VIRTUAL_RATIO       (0.8)
 
 #define NUMBER_OF_PHYSICAL_PAGES    (GB(1) / PAGE_SIZE)
 
-// Compute counts using double for the ratio, then cast to 64-bit
 #define NUMBER_OF_VIRTUAL_PAGES                         ((ULONG64)((NUMBER_OF_PHYSICAL_PAGES) / (PHYS_TO_VIRTUAL_RATIO)))
 
 #define VIRTUAL_ADDRESS_SIZE                            (NUMBER_OF_VIRTUAL_PAGES * PAGE_SIZE)
@@ -27,8 +26,8 @@
 #define VIRTUAL_ADDRESS_SIZE_IN_UNSIGNED_CHUNKS         (VIRTUAL_ADDRESS_SIZE / sizeof (ULONG_PTR))
 
 
-#define MAX_WRITE_PAGES 16
-#define TRANSFER_VA_COUNT 32
+#define MAX_WRITE_PAGES 512
+#define TRANSFER_VA_COUNT 512
 #define NUMBER_OF_DISK_SLOTS (NUMBER_OF_VIRTUAL_PAGES - NUMBER_OF_PHYSICAL_PAGES + 2)
 #define TEST_ITERATIONS MB(1)
 
@@ -138,6 +137,7 @@ typedef struct _THREAD_INFO {
 typedef struct frameListHead
 {
     Frame* headFrame;
+    Frame* tailFrame;
     ULONG64 length;
 } frameListHead;
 
@@ -214,6 +214,7 @@ PageTableEntry* VAToPageTableEntry(void* virtualAddress);
 void* PageTableEntryToVA(PageTableEntry* entry);
 
 VOID addToFrameList(frameListHead* head, Frame* item);
+VOID addToFrameListTail(frameListHead* head, Frame* item);
 VOID removeFromFrameList(frameListHead* headList, Frame* item);
 Frame* popFirstFrame(frameListHead* headPtr);
 BOOL listContains(frameListHead* headList, Frame* item);
