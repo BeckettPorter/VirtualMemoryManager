@@ -105,6 +105,7 @@ typedef struct Frame
     PageTableEntry* PTE;
     // If this is 1, we are on the modified list, otherwise on the standby list.
     ULONG64 isOnModifiedList: 1;
+    ULONG64 isOnStandbyList: 1;
     ULONG64 diskIndex: 40;
     ULONG64 isBeingWritten: 1;
 } Frame;

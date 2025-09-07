@@ -94,6 +94,18 @@ VOID addToFrameList(frameListHead* head, Frame* item)
     {
         head->tailFrame = item;
     }
+
+    // Maintain flags
+    if (head == &modifiedList)
+    {
+        item->isOnModifiedList = 1;
+        item->isOnStandbyList = 0;
+    }
+    else if (head == &standbyList)
+    {
+        item->isOnStandbyList = 1;
+        item->isOnModifiedList = 0;
+    }
 }
 
 // Removes `item` from the list `head` (if present).
@@ -116,6 +128,15 @@ VOID removeFromFrameList(frameListHead* headList, Frame* item)
         headList->headFrame = item->nextPFN;
         item->nextPFN = NULL;
         headList->length--;
+        if (headList->headFrame == NULL) {
+            headList->tailFrame = NULL;
+        }
+
+        if (headList == &modifiedList) {
+            item->isOnModifiedList = 0;
+        } else if (headList == &standbyList) {
+            item->isOnStandbyList = 0;
+        }
         return;
     }
 
@@ -127,6 +148,15 @@ VOID removeFromFrameList(frameListHead* headList, Frame* item)
             prev->nextPFN = cur->nextPFN;
             cur->nextPFN  = NULL;
             headList->length--;
+            if (headList->tailFrame == cur) {
+                headList->tailFrame = prev;
+            }
+
+            if (headList == &modifiedList) {
+                cur->isOnModifiedList = 0;
+            } else if (headList == &standbyList) {
+                cur->isOnStandbyList = 0;
+            }
             return;
         }
         prev = cur;
@@ -193,6 +223,17 @@ VOID addToFrameListTail(frameListHead* head, Frame* item)
 
     head->tailFrame = item;
     head->length++;
+
+    if (head == &modifiedList)
+    {
+        item->isOnModifiedList = 1;
+        item->isOnStandbyList = 0;
+    }
+    else if (head == &standbyList)
+    {
+        item->isOnStandbyList = 1;
+        item->isOnModifiedList = 0;
+    }
 }
 
 

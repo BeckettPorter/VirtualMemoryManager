@@ -120,41 +120,49 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
             frameNumber = pteContents.transitionFormat.pageFrameNumber;
             currentFrame = findFrameFromFrameNumber(frameNumber);
 
-            // Acquire list locks (PTELock already held)
-            acquireLock(&modifiedListLock);
-            acquireLock(&standbyListLock);
+            boolean rescued = false;
 
-            // (1) Being written?
+            // (1) Being written? Handle under standbyListLock only
+            acquireLock(&standbyListLock);
             if (currentFrame->isBeingWritten == 1) {
                 currentFrame->isBeingWritten = 0;
-                releaseLock(&standbyListLock);
+                rescued = true;
+            }
+            releaseLock(&standbyListLock);
+
+            if (!rescued)
+            {
+                // (2) On Modified?
+                acquireLock(&modifiedListLock);
+                if (currentFrame->isOnModifiedList == 1) {
+                    removeFromFrameList(&modifiedList, currentFrame);
+                    rescued = true;
+                }
                 releaseLock(&modifiedListLock);
             }
-            // (2) On Modified?
-            else if (listContains(&modifiedList, currentFrame)) {
-                removeFromFrameList(&modifiedList, currentFrame);
-                // (no disk-space change for Modified here)
-                releaseLock(&standbyListLock);
-                releaseLock(&modifiedListLock);
+
+            if (!rescued)
+            {
+                // (3) On Standby?
+                acquireLock(&standbyListLock);
+                if (currentFrame->isOnStandbyList == 1) {
+                    removeFromFrameList(&standbyList, currentFrame);
+                    ULONG64 diskIndex = currentFrame->diskIndex;
+                    releaseLock(&standbyListLock);
+
+                    acquireLock(&diskSpaceLock);
+                    ASSERT(freeDiskSpace[diskIndex] == false);
+                    freeDiskSpace[diskIndex] = true;
+                    releaseLock(&diskSpaceLock);
+
+                    rescued = true;
+                } else {
+                    releaseLock(&standbyListLock);
+                }
             }
-            // (3) On Standby?
-            else if (listContains(&standbyList, currentFrame)) {
-                acquireLock(&diskSpaceLock);
 
-                removeFromFrameList(&standbyList, currentFrame);
-
-                ULONG64 diskIndex = currentFrame->diskIndex;
-                ASSERT(freeDiskSpace[diskIndex] == false);
-                freeDiskSpace[diskIndex] = true;
-
-                releaseLock(&diskSpaceLock);
-                releaseLock(&standbyListLock);
-                releaseLock(&modifiedListLock);
-            }
             // (4) Neither list -> raced; retry fault cleanly
-            else {
-                releaseLock(&standbyListLock);
-                releaseLock(&modifiedListLock);
+            if (!rescued) {
                 releaseLock(PTELock);
                 return; // your outer while(true) will re-enter resolvePageFault
             }

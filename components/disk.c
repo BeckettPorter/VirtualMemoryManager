@@ -55,12 +55,12 @@ VOID swapToDisk()
         numPagesToActuallySwap++;
     }
 
+    // Release list lock before touching diskSpaceLock or performing IO
+    releaseLock(&modifiedListLock);
+
     // If there are no pages to swap, free any reserved disk slots and return.
     if (numPagesToActuallySwap == 0)
     {
-        // Release list lock before taking diskSpaceLock to respect lock hierarchy
-        releaseLock(&modifiedListLock);
-
         acquireLock(&diskSpaceLock);
         for (ULONG64 i = 0; i < numSlotsFound; i++)
         {
@@ -71,10 +71,12 @@ VOID swapToDisk()
     }
 
     // Clear out unused disk slots
+    acquireLock(&diskSpaceLock);
     for (ULONG64 i = numPagesToActuallySwap; i < numSlotsFound; i++)
     {
         freeDiskSpace[diskSlotsToBatch[i]] = true;
     }
+    releaseLock(&diskSpaceLock);
 
     ASSERT(numPagesToActuallySwap != 0);
 
@@ -84,7 +86,6 @@ VOID swapToDisk()
         printf ("swapToDisk : could not map VA %p to pages\n", writeTransferVA);
 
         DebugBreak();
-        releaseLock(&modifiedListLock);
         return;
     }
 
@@ -100,7 +101,6 @@ VOID swapToDisk()
         if (currentDiskSlot >= NUMBER_OF_DISK_SLOTS) {
             printf("swapToDisk: Invalid disk slot %llu >= %u\n", currentDiskSlot, NUMBER_OF_DISK_SLOTS);
             DebugBreak();
-            releaseLock(&modifiedListLock);
             return;
         }
 
@@ -126,8 +126,6 @@ VOID swapToDisk()
             releaseLock(&standbyListLock);
         }
     }
-
-    releaseLock(&modifiedListLock);
 
     if (!MapUserPhysicalPages(writeTransferVA, numPagesToActuallySwap, NULL))
     {
