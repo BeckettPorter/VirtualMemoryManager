@@ -164,7 +164,7 @@ VOID removeFromFrameList(frameListHead* headList, Frame* item)
     }
 
     // If this occurs we didn't find what we were looking for.
-    DebugBreak();
+    printf("Tried to remove frame not on list!");
 }
 
 // Pops the first Frame* from *headPtr, returns the popped frame (or NULL if empty).

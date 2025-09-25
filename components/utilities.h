@@ -6,18 +6,18 @@
 #define UTILITIES_H
 
 
-#define PAGE_SIZE                   4096
-#define KB(x)                       ((x) * 1024)
-#define MB(x)                       ((x) * 1024 * 1024)
-#define GB(x)                       ((x) * 1024ULL * 1024 * 1024)
+#define PAGE_SIZE                                       (4096)
+#define KB(x)                                           ((x) * 1024)
+#define MB(x)                                           ((x) * 1024 * 1024)
+#define GB(x)                                           ((x) * 1024ULL * 1024 * 1024)
 
 
 
 
 // ratio of physical to virtual memory
-#define PHYS_TO_VIRTUAL_RATIO       (0.8)
+#define PHYS_TO_VIRTUAL_RATIO                           (0.8)
 
-#define NUMBER_OF_PHYSICAL_PAGES    (GB(1) / PAGE_SIZE)
+#define NUMBER_OF_PHYSICAL_PAGES                        (GB(1) / PAGE_SIZE)
 
 #define NUMBER_OF_VIRTUAL_PAGES                         ((ULONG64)((NUMBER_OF_PHYSICAL_PAGES) / (PHYS_TO_VIRTUAL_RATIO)))
 
@@ -26,33 +26,34 @@
 #define VIRTUAL_ADDRESS_SIZE_IN_UNSIGNED_CHUNKS         (VIRTUAL_ADDRESS_SIZE / sizeof (ULONG_PTR))
 
 
-#define MAX_WRITE_PAGES 512
-#define TRANSFER_VA_COUNT 512
-#define NUMBER_OF_DISK_SLOTS (NUMBER_OF_VIRTUAL_PAGES - NUMBER_OF_PHYSICAL_PAGES + 2)
-#define TEST_ITERATIONS MB(1)
+#define MAX_WRITE_PAGES                                 (512)
+#define TRANSFER_VA_COUNT                               (512)
+#define NUMBER_OF_DISK_SLOTS                            (NUMBER_OF_VIRTUAL_PAGES - NUMBER_OF_PHYSICAL_PAGES + 2)
+
+#define TEST_ITERATIONS MB                              (1)
 
 // Threads
-#define AUTO_RESET              FALSE
-#define MANUAL_RESET            TRUE
-#define WAIT_FOR_ALL            TRUE
-#define WAIT_FOR_ONE            FALSE
-#define DEFAULT_SECURITY        ((LPSECURITY_ATTRIBUTES) NULL)
-#define DEFAULT_STACK_SIZE      0
-#define DEFAULT_CREATION_FLAGS  0
-#define EVENT_START_ON          TRUE
-#define EVENT_START_OFF         FALSE
+#define AUTO_RESET                                      FALSE
+#define MANUAL_RESET                                    TRUE
+#define WAIT_FOR_ALL                                    TRUE
+#define WAIT_FOR_ONE                                    FALSE
+#define DEFAULT_SECURITY                                ((LPSECURITY_ATTRIBUTES) NULL)
+#define DEFAULT_STACK_SIZE                              0
+#define DEFAULT_CREATION_FLAGS                          0
+#define EVENT_START_ON                                  TRUE
+#define EVENT_START_OFF                                 FALSE
 
-#define NUMBER_USER_THREADS 8
-#define NUMBER_TRIM_THREADS 1
-#define NUMBER_DISK_THREADS 1
-#define TOTAL_NUMBER_OF_THREADS (NUMBER_USER_THREADS + NUMBER_TRIM_THREADS + NUMBER_DISK_THREADS)
+#define NUMBER_USER_THREADS                             (8)
+#define NUMBER_TRIM_THREADS                             (1)
+#define NUMBER_DISK_THREADS                             (1)
+#define TOTAL_NUMBER_OF_THREADS                         (NUMBER_USER_THREADS + NUMBER_TRIM_THREADS + NUMBER_DISK_THREADS)
 
 // Thread types
-#define USER_THREAD 0
-#define TRIM_THREAD 1
-#define DISK_THREAD 2
+#define USER_THREAD                                     (0)
+#define TRIM_THREAD                                     (1)
+#define DISK_THREAD                                     (2)
 
-#define SHUTDOWN_PROGRAM_EVENT_INDEX 1
+#define SHUTDOWN_PROGRAM_EVENT_INDEX                    (1)
 
 #define ASSERT(x) if (!(x)) { DebugBreak(); }
 #include <windows.h>
