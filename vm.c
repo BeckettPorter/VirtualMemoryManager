@@ -295,8 +295,6 @@ VOID full_virtual_memory_test (VOID)
     BOOL privilege;
 
     HANDLE physical_page_handle;
-    ULONG_PTR virtual_address_size;
-    ULONG_PTR virtual_address_size_in_unsigned_chunks;
 
     // Start our timer
     startTime = GetTickCount64();
@@ -370,11 +368,6 @@ VOID full_virtual_memory_test (VOID)
     // to illustrate how we can manage the illusion.
     //
 
-    virtual_address_size = 64 * physical_page_count * PAGE_SIZE;
-
-    virtual_address_size_in_unsigned_chunks =
-                        virtual_address_size / sizeof (ULONG_PTR);
-
 #if SUPPORT_MULTIPLE_VA_TO_SAME_PAGE
 
     //
@@ -387,7 +380,7 @@ VOID full_virtual_memory_test (VOID)
 
     vaStartLoc = VirtualAlloc2 (NULL,
                        NULL,
-                       virtual_address_size,
+                       VIRTUAL_ADDRESS_SIZE,
                        MEM_RESERVE | MEM_PHYSICAL,
                        PAGE_READWRITE,
                        &sharablePhysicalPages,
@@ -396,7 +389,7 @@ VOID full_virtual_memory_test (VOID)
 #else
 
     vaStartLoc = VirtualAlloc (NULL,
-                      virtual_address_size,
+                      VIRTUAL_ADDRESS_SIZE,
                       MEM_RESERVE | MEM_PHYSICAL,
                       PAGE_READWRITE);
 

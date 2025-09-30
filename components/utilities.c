@@ -321,8 +321,10 @@ CRITICAL_SECTION* GetPTELock(PageTableEntry* pte)
         DebugBreak();
         return NULL;
     }
+
+    ULONG64 regionNum = index / PTE_REGION_SIZE;
     
-    return &pteLockTable[index];
+    return &pteLockTable[regionNum];
 }
 
 VOID acquireLock(CRITICAL_SECTION* lock)

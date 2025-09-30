@@ -131,7 +131,7 @@ VOID initCriticalSections()
     InitializeCriticalSection (&diskSpaceLock);
     InitializeCriticalSection (&threadCountLock);
 
-    for (ULONG64 i = 0; i < NUMBER_OF_VIRTUAL_PAGES; i++)
+    for (ULONG64 i = 0; i < PTE_LOCK_REGION_COUNT; i++)
     {
         InitializeCriticalSection (&pteLockTable[i]);
     }

@@ -18,8 +18,8 @@ ULONG userThread(_In_ PVOID Context)
     PULONG_PTR arbitrary_va;
     unsigned random_number;
     BOOL page_faulted;
-    ULONG_PTR virtual_address_size;
     ULONG64 i;
+    PULONG_PTR lastVirtualAddressAccess = 0;
 
     printf("Thread id %u started\n", ((PTHREAD_INFO) Context)->ThreadNumber);
 
@@ -42,30 +42,45 @@ ULONG userThread(_In_ PVOID Context)
 
         random_number = (unsigned) (ReadTimeStampCounter() >> 4);
 
-
-        virtual_address_size = VIRTUAL_ADDRESS_SIZE;
-
-        random_number %= virtual_address_size / sizeof (ULONG_PTR);
-
-        //
-        // Write the virtual address into each page.  If we need to
-        // debug anything, we'll be able to see these in the pages.
-        //
-
-        page_faulted = FALSE;
-
-        //
-        // Ensure the write to the arbitrary virtual address doesn't
-        // straddle a PAGE_SIZE boundary just to keep things simple for
-        // now.
-        //
+        random_number %= VIRTUAL_ADDRESS_SIZE / sizeof (ULONG_PTR);
 
         random_number &= ~0x7;
 
-        PULONG_PTR vaStart = vaStartLoc;
-        arbitrary_va = vaStart + random_number;
-        // Calc PTE for this VA
+        ULONG64 accessType = random_number % 3;
 
+        PULONG_PTR vaStart = vaStartLoc;
+
+        // If this is the first time through
+        if (lastVirtualAddressAccess == 0)
+        {
+            arbitrary_va = vaStart + random_number;
+        }
+        else
+        {
+            // 1/3 of the time, jump to a completely new random VA.
+            if (accessType == 0)
+            {
+                arbitrary_va = vaStart + random_number;
+            }
+            // Else, do a read of the next VA
+            else
+            {
+                arbitrary_va = lastVirtualAddressAccess + PAGE_SIZE;
+
+                // Check if we've gone beyond our virtual address space
+                if ((ULONG64)arbitrary_va >= (ULONG64)vaStart + VIRTUAL_ADDRESS_SIZE)
+                {
+                    // Wrap around to beginning of address space
+                    arbitrary_va = vaStart;
+                }
+            }
+
+        }
+
+        lastVirtualAddressAccess = arbitrary_va;
+
+
+        page_faulted = FALSE;
 
 
         while (true)
@@ -216,10 +231,10 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
                 }
 
 
-                if (!tryAcquireLock(victimPTELock))
-                {
-                    // If we can't get the victim PTE lock, return.
-                    ASSERT (currentFrame != NULL);
+                // Check if we need to acquire a different PTE lock region
+                if (PTELock != victimPTELock) {
+                    // Different regions, need to release current lock and retry
+                    ASSERT(currentFrame != NULL);
 
                     acquireLock(&standbyListLock);
                     addToFrameList(&standbyList, currentFrame);

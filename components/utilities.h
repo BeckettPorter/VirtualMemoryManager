@@ -12,8 +12,6 @@
 #define GB(x)                                           ((x) * 1024ULL * 1024 * 1024)
 
 
-
-
 // ratio of physical to virtual memory
 #define PHYS_TO_VIRTUAL_RATIO                           (0.8)
 
@@ -31,6 +29,11 @@
 #define NUMBER_OF_DISK_SLOTS                            (NUMBER_OF_VIRTUAL_PAGES - NUMBER_OF_PHYSICAL_PAGES + 2)
 
 #define TEST_ITERATIONS MB                              (1)
+
+
+#define PTE_LOCK_REGION_COUNT                           (4096)
+#define PTE_REGION_SIZE                                 (NUMBER_OF_VIRTUAL_PAGES / PTE_LOCK_REGION_COUNT)
+
 
 // Threads
 #define AUTO_RESET                                      FALSE
@@ -194,7 +197,7 @@ CRITICAL_SECTION standbyListLock;
 CRITICAL_SECTION diskSpaceLock;
 CRITICAL_SECTION threadCountLock;
 
-CRITICAL_SECTION pteLockTable[NUMBER_OF_VIRTUAL_PAGES];
+CRITICAL_SECTION pteLockTable[PTE_LOCK_REGION_COUNT];
 
 CRITICAL_SECTION* GetPTELock(PageTableEntry* pte);
 
