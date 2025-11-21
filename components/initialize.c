@@ -59,6 +59,7 @@ VOID initListsAndPFNs()
         freeList.headFrame = &pfnArray[currentFrameNumber];
         pfnArray[currentFrameNumber].PTE = NULL;
         pfnArray[currentFrameNumber].isOnModifiedList = 0;
+        pfnArray[currentFrameNumber].diskIndex = INVALID_DISK_SLOT;
     }
 }
 

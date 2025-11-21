@@ -25,10 +25,18 @@ ULONG userThread(_In_ PVOID Context)
 
     for (i = 0; i < TEST_ITERATIONS; i += 1)
     {
-        if (i % (KB(100)) == 0)
+        // Only print debug stats from one thread so we dont spam too much
+        if (((PTHREAD_INFO) Context)->ThreadNumber == 0)
         {
-            printf(". ");
+            if (i % (MB(1)) == 0)
+            {
+                printf("freeList length is: %llu   ", freeList.length);
+                printf("activeList length is: %llu   ", activeList.length);
+                printf("standbyList length is: %llu   ", standbyList.length);
+                printf("modifiedList length is: %llu \n", modifiedList.length);
+            }
         }
+
         //
         // Randomly access different portions of the virtual address
         // space we obtained above.
@@ -174,6 +182,7 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
                     freeDiskSpace[diskIndex] = true;
                     releaseLock(&diskSpaceLock);
 
+                    currentFrame->diskIndex = INVALID_DISK_SLOT;
                     rescued = true;
                 } else {
                     releaseLock(&standbyListLock);

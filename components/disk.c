@@ -129,6 +129,8 @@ VOID swapToDisk()
             ASSERT(freeDiskSpace[currentDiskSlot] == false);
             freeDiskSpace[currentDiskSlot] = true;
             releaseLock(&diskSpaceLock);
+
+            currentFrame->diskIndex = INVALID_DISK_SLOT;
         }
     }
 
@@ -207,6 +209,8 @@ VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom, PVOID con
     // Set the disk space we just copied from to true to clear it from being used.
     freeDiskSpace[diskIndexToTransferFrom] = true;
     releaseLock(&diskSpaceLock);
+
+    frameToFill->diskIndex = INVALID_DISK_SLOT;
 
     memcpy(transferVAToUse, totalDiskSpace + diskIndexToTransferFrom * PAGE_SIZE, PAGE_SIZE);
 }

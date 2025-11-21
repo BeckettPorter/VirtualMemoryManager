@@ -7,6 +7,8 @@
 #include "initialize.h"
 
 
+#define INVALID_DISK_SLOT ((ULONG64)-1)
+
 unsigned char* totalDiskSpace;
 boolean* freeDiskSpace;
 ULONG64 diskSearchStartIndex;
