@@ -28,7 +28,7 @@
 #define TRANSFER_VA_COUNT                               (512)
 #define NUMBER_OF_DISK_SLOTS                            (NUMBER_OF_VIRTUAL_PAGES - NUMBER_OF_PHYSICAL_PAGES + 2)
 
-#define TEST_ITERATIONS MB                              (1)
+#define TEST_ITERATIONS MB                              (111)
 
 
 #define PTE_LOCK_REGION_COUNT                           (4096)

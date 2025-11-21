@@ -25,6 +25,10 @@ ULONG userThread(_In_ PVOID Context)
 
     for (i = 0; i < TEST_ITERATIONS; i += 1)
     {
+        if (i % (KB(100)) == 0)
+        {
+            printf(". ");
+        }
         //
         // Randomly access different portions of the virtual address
         // space we obtained above.
@@ -179,7 +183,7 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
             // (4) Neither list -> raced; retry fault cleanly
             if (!rescued) {
                 releaseLock(PTELock);
-                return; // your outer while(true) will re-enter resolvePageFault
+                return; // outer while(true) will re-enter resolvePageFault
             }
 
         }
@@ -230,29 +234,41 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
                     return;
                 }
 
-
-                // Check if we need to acquire a different PTE lock region
-                if (PTELock != victimPTELock) {
-                    // Different regions, need to release current lock and retry
-                    ASSERT(currentFrame != NULL);
-
-                    acquireLock(&standbyListLock);
-                    addToFrameList(&standbyList, currentFrame);
-                    releaseLock(&standbyListLock);
-
+                if (victimPTELock != PTELock)
+                {
+                    // Update victim PTE under its own lock, then reacquire PTELock.
                     releaseLock(PTELock);
-                    return;
+
+                    acquireLock(victimPTELock);
+                    PageTableEntry victimPteContents = {0};
+                    victimPteContents.invalidFormat.mustBeZero = 0;
+                    victimPteContents.invalidFormat.isTransitionFormat = 0;
+                    victimPteContents.invalidFormat.diskIndex = currentFrame->diskIndex;
+                    *victimPTE = victimPteContents;
+                    releaseLock(victimPTELock);
+
+                    acquireLock(PTELock);
+
+                    // Re-check faulting PTE after temporarily dropping the lock.
+                    pteContents = *currentPTE;
+                    if (pteContents.validFormat.isValid == 1 && pteContents.validFormat.isTransitionFormat == 0)
+                    {
+                        acquireLock(&standbyListLock);
+                        addToFrameList(&standbyList, currentFrame);
+                        releaseLock(&standbyListLock);
+                        releaseLock(PTELock);
+                        return;
+                    }
                 }
-
-                // Update victim PTE to invalid disk format
-                PageTableEntry victimPteContents;
-                victimPteContents.entireFormat = 0;
-                victimPteContents.invalidFormat.mustBeZero = 0;
-                victimPteContents.invalidFormat.isTransitionFormat = 0;
-                victimPteContents.invalidFormat.diskIndex = currentFrame->diskIndex;
-                *victimPTE = victimPteContents;
-
-                releaseLock(victimPTELock);
+                else
+                {
+                    // Update victim PTE to invalid disk format using the faulting lock.
+                    PageTableEntry victimPteContents = {0};
+                    victimPteContents.invalidFormat.mustBeZero = 0;
+                    victimPteContents.invalidFormat.isTransitionFormat = 0;
+                    victimPteContents.invalidFormat.diskIndex = currentFrame->diskIndex;
+                    *victimPTE = victimPteContents;
+                }
             }
 
             frameNumber = findFrameNumberFromFrame(currentFrame);

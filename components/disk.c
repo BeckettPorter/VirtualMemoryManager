@@ -107,14 +107,13 @@ VOID swapToDisk()
         // Copy the contents of the VA to the disk space we are trying to write to.
         memcpy(totalDiskSpace + currentDiskSlot * PAGE_SIZE, copyVA, PAGE_SIZE);
 
-        currentFrame->diskIndex = currentDiskSlot;
-
         acquireLock(&standbyListLock);
 
-        // If we haven't already rescued this frame.
+        // Move frames still being written to the standby list.
         if (currentFrame->isBeingWritten == 1)
         {
             currentFrame->isBeingWritten = 0;
+            currentFrame->diskIndex = currentDiskSlot;
             addToFrameList(&standbyList, currentFrame);
 
             ASSERT(freeDiskSpace[currentDiskSlot] == false);
@@ -124,6 +123,12 @@ VOID swapToDisk()
         else
         {
             releaseLock(&standbyListLock);
+
+            // Free disk slot if the frame was rescued before this write.
+            acquireLock(&diskSpaceLock);
+            ASSERT(freeDiskSpace[currentDiskSlot] == false);
+            freeDiskSpace[currentDiskSlot] = true;
+            releaseLock(&diskSpaceLock);
         }
     }
 

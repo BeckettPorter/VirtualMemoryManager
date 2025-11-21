@@ -189,6 +189,15 @@ Frame* popFirstFrame(frameListHead* headPtr)
         headPtr->tailFrame = NULL;
     }
 
+    if (headPtr == &modifiedList)
+    {
+        frameToPop->isOnModifiedList = 0;
+    }
+    else if (headPtr == &standbyList)
+    {
+        frameToPop->isOnStandbyList = 0;
+    }
+
     return frameToPop;
 }
 
