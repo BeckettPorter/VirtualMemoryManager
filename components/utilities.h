@@ -26,7 +26,7 @@
 
 #define MAX_WRITE_PAGES                                 (512)
 #define TRANSFER_VA_COUNT                               (512)
-#define NUMBER_OF_DISK_SLOTS                            (NUMBER_OF_VIRTUAL_PAGES - NUMBER_OF_PHYSICAL_PAGES + 2)
+#define NUMBER_OF_DISK_SLOTS                            (NUMBER_OF_VIRTUAL_PAGES)
 
 #define TEST_ITERATIONS MB                              (111)
 
@@ -194,7 +194,6 @@ CRITICAL_SECTION freeListLock;
 CRITICAL_SECTION activeListLock;
 CRITICAL_SECTION modifiedListLock;
 CRITICAL_SECTION standbyListLock;
-CRITICAL_SECTION diskSpaceLock;
 CRITICAL_SECTION threadCountLock;
 
 CRITICAL_SECTION pteLockTable[PTE_LOCK_REGION_COUNT];
@@ -203,13 +202,11 @@ CRITICAL_SECTION* GetPTELock(PageTableEntry* pte);
 
 // LOCK HEIRARCHY
 // 1. PTE locks
-// 2. diskSpaceLock
-// 3. List locks
-// - 3.1. freeListLock
-// - 3.2. activeListLock
-// - 3.3. modifiedListLock
-// - 3.4. standbyListLock
-
+// 2. List locks
+// - 2.1. freeListLock
+// - 2.2. activeListLock
+// - 2.3. modifiedListLock
+// - 2.4. standbyListLock
 
 
 

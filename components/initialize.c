@@ -89,13 +89,14 @@ VOID initDiskSpace()
     // Allocate disk space sized to the number of slots
     ULONG64 diskBytes = (ULONG64)NUMBER_OF_DISK_SLOTS * (ULONG64)PAGE_SIZE;
     totalDiskSpace = malloc((size_t)diskBytes);
-    freeDiskSpace = malloc(NUMBER_OF_DISK_SLOTS * sizeof(boolean));
-    diskSearchStartIndex = 0;
 
-    for (ULONG64 i = 0; i < NUMBER_OF_DISK_SLOTS; i++)
-    {
-        freeDiskSpace[i] = TRUE;
-    }
+    diskSlotBitmapLength = (NUMBER_OF_DISK_SLOTS + 63) / 64;
+    size_t bitmapBytes = (size_t)diskSlotBitmapLength * sizeof(LONG64);
+    diskSlotBitmap = malloc(bitmapBytes);
+    ASSERT(diskSlotBitmap != NULL);
+    memset((void*)diskSlotBitmap, 0, bitmapBytes);
+
+    diskSearchStartIndex = 0;
 
     numAttemptedModWrites = 0;
 }
@@ -129,7 +130,6 @@ VOID initCriticalSections()
     InitializeCriticalSection (&activeListLock);
     InitializeCriticalSection (&modifiedListLock);
     InitializeCriticalSection (&standbyListLock);
-    InitializeCriticalSection (&diskSpaceLock);
     InitializeCriticalSection (&threadCountLock);
 
     for (ULONG64 i = 0; i < PTE_LOCK_REGION_COUNT; i++)

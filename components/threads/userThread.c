@@ -177,10 +177,8 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
                     ULONG64 diskIndex = currentFrame->diskIndex;
                     releaseLock(&standbyListLock);
 
-                    acquireLock(&diskSpaceLock);
-                    ASSERT(freeDiskSpace[diskIndex] == false);
-                    freeDiskSpace[diskIndex] = true;
-                    releaseLock(&diskSpaceLock);
+                    ASSERT(IsDiskSlotInUse(diskIndex) == TRUE);
+                    ReleaseDiskSlot(diskIndex);
 
                     currentFrame->diskIndex = INVALID_DISK_SLOT;
                     rescued = true;

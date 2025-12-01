@@ -6,8 +6,72 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <intrin.h>
 
 #include "pages.h"
+
+static ULONG64 DiskSlotToWordIndex(ULONG64 slotIndex)
+{
+    return slotIndex >> 6;
+}
+
+static LONG DiskSlotToBitOffset(ULONG64 slotIndex)
+{
+    return (LONG)(slotIndex & 63ULL);
+}
+
+static BOOLEAN TryReserveDiskSlotInternal(ULONG64 slotIndex)
+{
+    ASSERT(slotIndex < NUMBER_OF_DISK_SLOTS);
+    ULONG64 wordIndex = DiskSlotToWordIndex(slotIndex);
+    ASSERT(wordIndex < diskSlotBitmapLength);
+
+    volatile LONG64* word = &diskSlotBitmap[wordIndex];
+    LONG bit = DiskSlotToBitOffset(slotIndex);
+
+    BOOLEAN wasInUse = _interlockedbittestandset64(word, bit);
+    return wasInUse == FALSE;
+}
+
+BOOLEAN IsDiskSlotInUse(ULONG64 slotIndex)
+{
+    if (slotIndex == INVALID_DISK_SLOT)
+    {
+        return FALSE;
+    }
+
+    if (slotIndex >= NUMBER_OF_DISK_SLOTS)
+    {
+        return FALSE;
+    }
+
+    ULONG64 wordIndex = DiskSlotToWordIndex(slotIndex);
+    if (wordIndex >= diskSlotBitmapLength)
+    {
+        return FALSE;
+    }
+
+    ULONG64 snapshot = (ULONG64)diskSlotBitmap[wordIndex];
+    return ((snapshot >> DiskSlotToBitOffset(slotIndex)) & 1ULL) != 0;
+}
+
+VOID ReleaseDiskSlot(ULONG64 slotIndex)
+{
+    if (slotIndex == INVALID_DISK_SLOT)
+    {
+        return;
+    }
+
+    ASSERT(slotIndex < NUMBER_OF_DISK_SLOTS);
+    ULONG64 wordIndex = DiskSlotToWordIndex(slotIndex);
+    ASSERT(wordIndex < diskSlotBitmapLength);
+
+    volatile LONG64* word = &diskSlotBitmap[wordIndex];
+    LONG bit = DiskSlotToBitOffset(slotIndex);
+
+    BOOLEAN wasInUse = _interlockedbittestandreset64(word, bit);
+    ASSERT(wasInUse == TRUE);
+}
 
 // In future, can add number of pages to swap here and pass array
 VOID swapToDisk()
@@ -55,28 +119,24 @@ VOID swapToDisk()
         numPagesToActuallySwap++;
     }
 
-    // Release list lock before touching diskSpaceLock or performing IO
+    // Release list lock before performing IO
     releaseLock(&modifiedListLock);
 
     // If there are no pages to swap, free any reserved disk slots and return.
     if (numPagesToActuallySwap == 0)
     {
-        acquireLock(&diskSpaceLock);
         for (ULONG64 i = 0; i < numSlotsFound; i++)
         {
-            freeDiskSpace[diskSlotsToBatch[i]] = true;
+            ReleaseDiskSlot(diskSlotsToBatch[i]);
         }
-        releaseLock(&diskSpaceLock);
         return;
     }
 
     // Clear out unused disk slots
-    acquireLock(&diskSpaceLock);
     for (ULONG64 i = numPagesToActuallySwap; i < numSlotsFound; i++)
     {
-        freeDiskSpace[diskSlotsToBatch[i]] = true;
+        ReleaseDiskSlot(diskSlotsToBatch[i]);
     }
-    releaseLock(&diskSpaceLock);
 
     ASSERT(numPagesToActuallySwap != 0);
 
@@ -116,7 +176,7 @@ VOID swapToDisk()
             currentFrame->diskIndex = currentDiskSlot;
             addToFrameList(&standbyList, currentFrame);
 
-            ASSERT(freeDiskSpace[currentDiskSlot] == false);
+            ASSERT(IsDiskSlotInUse(currentDiskSlot) == TRUE);
 
             releaseLock(&standbyListLock);
         }
@@ -125,10 +185,8 @@ VOID swapToDisk()
             releaseLock(&standbyListLock);
 
             // Free disk slot if the frame was rescued before this write.
-            acquireLock(&diskSpaceLock);
-            ASSERT(freeDiskSpace[currentDiskSlot] == false);
-            freeDiskSpace[currentDiskSlot] = true;
-            releaseLock(&diskSpaceLock);
+            ASSERT(IsDiskSlotInUse(currentDiskSlot) == TRUE);
+            ReleaseDiskSlot(currentDiskSlot);
 
             currentFrame->diskIndex = INVALID_DISK_SLOT;
         }
@@ -144,38 +202,57 @@ VOID swapToDisk()
 // DECLSPEC_NOINLINE
 ULONG64 findFreeDiskSlot()
 {
-    acquireLock(&diskSpaceLock);
-
-    // Make this start at last found slot.
+    ASSERT(diskSlotBitmapLength > 0);
+    ULONG64 totalSlots = NUMBER_OF_DISK_SLOTS;
     ULONG64 currentSearchIndex = diskSearchStartIndex;
+    ULONG64 scanned = 0;
 
-    for (ULONG64 i = 0; i < NUMBER_OF_DISK_SLOTS; i++)
+    while (scanned < totalSlots)
     {
-        if (freeDiskSpace[currentSearchIndex] == true)
+        ULONG64 wordIndex = DiskSlotToWordIndex(currentSearchIndex);
+        LONG bitOffset = DiskSlotToBitOffset(currentSearchIndex);
+
+        if (diskSlotBitmap[wordIndex] == -1LL)
+        {
+            ULONG64 skip = 64ULL - bitOffset;
+            if (skip == 0)
+            {
+                skip = 64ULL;
+            }
+
+            ULONG64 remaining = totalSlots - scanned;
+            if (skip > remaining)
+            {
+                skip = remaining;
+            }
+
+            scanned += skip;
+            currentSearchIndex += skip;
+            if (currentSearchIndex >= totalSlots)
+            {
+                currentSearchIndex -= totalSlots;
+            }
+            continue;
+        }
+
+        if (TryReserveDiskSlotInternal(currentSearchIndex))
         {
             diskSearchStartIndex = currentSearchIndex + 1;
-
-            // Wrap our search index around if we go past the end of the array.
-            if (diskSearchStartIndex >= NUMBER_OF_DISK_SLOTS)
+            if (diskSearchStartIndex >= totalSlots)
             {
                 diskSearchStartIndex = 0;
             }
-
-            // Set this to in use now.
-            freeDiskSpace[currentSearchIndex] = false;
-            releaseLock(&diskSpaceLock);
             return currentSearchIndex;
         }
-        currentSearchIndex++;
 
-        // Wrap our current search index around if we go past the end of the array.
-        if (currentSearchIndex >= NUMBER_OF_DISK_SLOTS)
+        currentSearchIndex++;
+        scanned++;
+        if (currentSearchIndex >= totalSlots)
         {
             currentSearchIndex = 0;
         }
     }
 
-    releaseLock(&diskSpaceLock);
     // Return -1 if we couldn't find any free disk slots.
     return -1;
 }
@@ -203,12 +280,8 @@ VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom, PVOID con
 
     // If the slot in disk space we are trying to fill from is not already in use, debug break
     // because the contents should be there.
-    acquireLock(&diskSpaceLock);
-    ASSERT(freeDiskSpace[diskIndexToTransferFrom] == false);
-
-    // Set the disk space we just copied from to true to clear it from being used.
-    freeDiskSpace[diskIndexToTransferFrom] = true;
-    releaseLock(&diskSpaceLock);
+    ASSERT(IsDiskSlotInUse(diskIndexToTransferFrom) == TRUE);
+    ReleaseDiskSlot(diskIndexToTransferFrom);
 
     frameToFill->diskIndex = INVALID_DISK_SLOT;
 

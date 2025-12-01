@@ -10,7 +10,8 @@
 #define INVALID_DISK_SLOT ((ULONG64)-1)
 
 unsigned char* totalDiskSpace;
-boolean* freeDiskSpace;
+volatile LONG64* diskSlotBitmap;
+ULONG64 diskSlotBitmapLength;
 ULONG64 diskSearchStartIndex;
 ULONG64 numAttemptedModWrites;
 
@@ -22,6 +23,7 @@ ULONG64 findFreeDiskSlot();
 
 VOID swapFromDisk(Frame* frameToFill, ULONG64 diskIndexToTransferFrom, PVOID context);
 
-ULONG64* diskSlotsToBatch;
+VOID ReleaseDiskSlot(ULONG64 slotIndex);
+BOOLEAN IsDiskSlotInUse(ULONG64 slotIndex);
 
 #endif //DISK_H
