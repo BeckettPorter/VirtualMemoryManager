@@ -11,6 +11,7 @@
 #include "disk.h"
 #include "pages.h"
 
+ULONG64 CurrentUserThreadCount = NUMBER_USER_THREADS;
 
 PageTableEntry* VAToPageTableEntry(void* virtualAddress)
 {
@@ -89,6 +90,13 @@ VOID addToFrameList(frameListHead* head, Frame* item)
         item->nextPFN = head->headFrame;
     }
 
+    item->prevPFN = NULL;
+
+    if (head->headFrame != NULL)
+    {
+        head->headFrame->prevPFN = item;
+    }
+
     head->headFrame = item;
     if (head->tailFrame == NULL)
     {
@@ -110,61 +118,65 @@ VOID addToFrameList(frameListHead* head, Frame* item)
 
 // Removes `item` from the list `head` (if present).
 // Returns the new head of the list.
+// Removes `item` from the list `head` (if present).
+// Returns the new head of the list.
+// Optimized for O(1) removal using doubly linked list
 VOID removeFromFrameList(frameListHead* headList, Frame* item)
 {
-    Frame* head = headList->headFrame;
-
-    if (!head || !item)
+    if (!item)
     {
         DebugBreak();
         return;
-        // Removing something not on list!
     }
 
-
-
-    // If the item to remove is the head, pop it off.
-    if (head == item) {
-        headList->headFrame = item->nextPFN;
-        item->nextPFN = NULL;
-        headList->length--;
-        if (headList->headFrame == NULL) {
-            headList->tailFrame = NULL;
+    // Unlink from previous
+    if (item->prevPFN)
+    {
+        item->prevPFN->nextPFN = item->nextPFN;
+    }
+    else
+    {
+        // It was the head
+        if (headList->headFrame == item)
+        {
+            headList->headFrame = item->nextPFN;
         }
-
-        if (headList == &modifiedList) {
-            item->isOnModifiedList = 0;
-        } else if (headList == &standbyList) {
-            item->isOnStandbyList = 0;
+        else
+        {
+            // Error: item has no prev but is not head? 
+            // Possibly not in this list or list corruption.
+             printf("removeFromFrameList: item %p not at head but has no prev\n", item);
+             // DebugBreak(); 
         }
-        return;
     }
 
-    // Otherwise, walk the list looking for the item.
-    Frame* prev = head;
-    Frame* cur  = head->nextPFN;
-    while (cur) {
-        if (cur == item) {
-            prev->nextPFN = cur->nextPFN;
-            cur->nextPFN  = NULL;
-            headList->length--;
-            if (headList->tailFrame == cur) {
-                headList->tailFrame = prev;
-            }
-
-            if (headList == &modifiedList) {
-                cur->isOnModifiedList = 0;
-            } else if (headList == &standbyList) {
-                cur->isOnStandbyList = 0;
-            }
-            return;
+    // Unlink from next
+    if (item->nextPFN)
+    {
+        item->nextPFN->prevPFN = item->prevPFN;
+    }
+    else
+    {
+        // It was the tail
+        if (headList->tailFrame == item)
+        {
+            headList->tailFrame = item->prevPFN;
         }
-        prev = cur;
-        cur  = cur->nextPFN;
     }
 
-    // If this occurs we didn't find what we were looking for.
-    printf("Tried to remove frame not on list!");
+    item->nextPFN = NULL;
+    item->prevPFN = NULL;
+    headList->length--;
+
+    if (headList->headFrame == NULL) {
+        headList->tailFrame = NULL;
+    }
+
+    if (headList == &modifiedList) {
+        item->isOnModifiedList = 0;
+    } else if (headList == &standbyList) {
+        item->isOnStandbyList = 0;
+    }
 }
 
 // Pops the first Frame* from *headPtr, returns the popped frame (or NULL if empty).
@@ -182,12 +194,18 @@ Frame* popFirstFrame(frameListHead* headPtr)
 
 
     headPtr->headFrame = frameToPop->nextPFN;
-    frameToPop->nextPFN = NULL;
-
-    if (headPtr->headFrame == NULL)
+    
+    if (headPtr->headFrame)
+    {
+        headPtr->headFrame->prevPFN = NULL;
+    }
+    else
     {
         headPtr->tailFrame = NULL;
     }
+    
+    frameToPop->nextPFN = NULL;
+    frameToPop->prevPFN = NULL;
 
     if (headPtr == &modifiedList)
     {
@@ -221,6 +239,8 @@ VOID addToFrameListTail(frameListHead* head, Frame* item)
     }
 
     item->nextPFN = NULL;
+    item->prevPFN = head->tailFrame;
+
     if (head->tailFrame)
     {
         head->tailFrame->nextPFN = item;
@@ -309,7 +329,7 @@ VOID flushTransferVAs(PVOID allThreadTransferVAs)
 
 VOID shutdownUserThread(int userThreadIndex)
 {
-    acquireLock(&threadCountLock);
+    AcquireThreadCountLock();
     numActiveUserThreads--;
     if (numActiveUserThreads == 0)
     {
@@ -317,7 +337,7 @@ VOID shutdownUserThread(int userThreadIndex)
         printf ("full_virtual_memory_test : finished accessing random virtual addresses\n");
 
     }
-    releaseLock(&threadCountLock);
+    ReleaseThreadCountLock();
 }
 
 CRITICAL_SECTION* GetPTELock(PageTableEntry* pte)
@@ -350,4 +370,64 @@ VOID releaseLock(CRITICAL_SECTION* lock)
 
 BOOL tryAcquireLock(CRITICAL_SECTION* lock) {
     return TryEnterCriticalSection(lock);
+}
+
+VOID AcquireFreeListLock()
+{
+    EnterCriticalSection(&freeListLock);
+}
+
+VOID ReleaseFreeListLock()
+{
+    LeaveCriticalSection(&freeListLock);
+}
+
+VOID AcquireActiveListLock()
+{
+    EnterCriticalSection(&activeListLock);
+}
+
+VOID ReleaseActiveListLock()
+{
+    LeaveCriticalSection(&activeListLock);
+}
+
+VOID AcquireModifiedListLock()
+{
+    EnterCriticalSection(&modifiedListLock);
+}
+
+VOID ReleaseModifiedListLock()
+{
+    LeaveCriticalSection(&modifiedListLock);
+}
+
+VOID AcquireStandbyListLock()
+{
+    EnterCriticalSection(&standbyListLock);
+}
+
+VOID ReleaseStandbyListLock()
+{
+    LeaveCriticalSection(&standbyListLock);
+}
+
+VOID AcquireThreadCountLock()
+{
+    EnterCriticalSection(&threadCountLock);
+}
+
+VOID ReleaseThreadCountLock()
+{
+    LeaveCriticalSection(&threadCountLock);
+}
+
+VOID AcquirePTELock(CRITICAL_SECTION* lock)
+{
+    EnterCriticalSection(lock);
+}
+
+VOID ReleasePTELock(CRITICAL_SECTION* lock)
+{
+    LeaveCriticalSection(lock);
 }

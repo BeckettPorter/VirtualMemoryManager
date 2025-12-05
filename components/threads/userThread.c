@@ -25,18 +25,10 @@ ULONG userThread(_In_ PVOID Context)
 
     for (i = 0; i < TEST_ITERATIONS; i += 1)
     {
-        // Only print debug stats from one thread so we dont spam too much
-        if (((PTHREAD_INFO) Context)->ThreadNumber == 0)
-        {
-            if (i % (MB(1)) == 0)
-            {
-                printf("freeList length is: %llu   ", freeList.length);
-                printf("activeList length is: %llu   ", activeList.length);
-                printf("standbyList length is: %llu   ", standbyList.length);
-                printf("modifiedList length is: %llu \n", modifiedList.length);
-            }
-        }
-
+        // if (i % MB(1) == 0 && ((PTHREAD_INFO)Context)->ThreadNumber == 0)
+        // {
+        //     printf(". ");
+        // }
         //
         // Randomly access different portions of the virtual address
         // space we obtained above.
@@ -134,7 +126,7 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
         printf("resolvePageFault: Invalid PTELock for VA %p\n", arbitrary_va);
         return;
     }
-    acquireLock(PTELock);
+    AcquirePTELock(PTELock);
 
     // Read the PTE contents while we have the lock
     PageTableEntry pteContents = *currentPTE;
@@ -150,32 +142,32 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
             boolean rescued = false;
 
             // (1) Being written? Handle under standbyListLock only
-            acquireLock(&standbyListLock);
+            AcquireStandbyListLock();
             if (currentFrame->isBeingWritten == 1) {
                 currentFrame->isBeingWritten = 0;
                 rescued = true;
             }
-            releaseLock(&standbyListLock);
+            ReleaseStandbyListLock();
 
             if (!rescued)
             {
                 // (2) On Modified?
-                acquireLock(&modifiedListLock);
+                AcquireModifiedListLock();
                 if (currentFrame->isOnModifiedList == 1) {
                     removeFromFrameList(&modifiedList, currentFrame);
                     rescued = true;
                 }
-                releaseLock(&modifiedListLock);
+                ReleaseModifiedListLock();
             }
 
             if (!rescued)
             {
                 // (3) On Standby?
-                acquireLock(&standbyListLock);
+                AcquireStandbyListLock();
                 if (currentFrame->isOnStandbyList == 1) {
                     removeFromFrameList(&standbyList, currentFrame);
                     ULONG64 diskIndex = currentFrame->diskIndex;
-                    releaseLock(&standbyListLock);
+                    ReleaseStandbyListLock();
 
                     ASSERT(IsDiskSlotInUse(diskIndex) == TRUE);
                     ReleaseDiskSlot(diskIndex);
@@ -183,13 +175,13 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
                     currentFrame->diskIndex = INVALID_DISK_SLOT;
                     rescued = true;
                 } else {
-                    releaseLock(&standbyListLock);
+                    ReleaseStandbyListLock();
                 }
             }
 
             // (4) Neither list -> raced; retry fault cleanly
             if (!rescued) {
-                releaseLock(PTELock);
+                ReleasePTELock(PTELock);
                 return; // outer while(true) will re-enter resolvePageFault
             }
 
@@ -204,13 +196,13 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
                 retrievedFromStandbyList = true;
 
                 // Acquire list locks in correct order
-                acquireLock(&standbyListLock);
+                AcquireStandbyListLock();
 
                 while (standbyList.headFrame == NULL)
                 {
                     // Release locks before waiting
-                    releaseLock(&standbyListLock);
-                    releaseLock(PTELock);
+                    ReleaseStandbyListLock();
+                    ReleasePTELock(PTELock);
 
                     ResetEvent(finishedModWriteEvent);
                     SetEvent(trimEvent);
@@ -221,7 +213,7 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
                 }
 
                 currentFrame = popFirstFrame(&standbyList);
-                releaseLock(&standbyListLock);
+                ReleaseStandbyListLock();
 
                 // Get victim PTE lock (another PTE lock)
                 victimPTE = currentFrame->PTE;
@@ -229,7 +221,7 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
                 {
                     DebugBreak();
                     printf("resolvePageFault: victimPTE is NULL for frame %llu\n", findFrameNumberFromFrame(currentFrame));
-                    releaseLock(PTELock);
+                    ReleasePTELock(PTELock);
                     return;
                 }
 
@@ -237,33 +229,33 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
                 if (victimPTELock == NULL)
                 {
                     printf("resolvePageFault: Invalid victimPTELock for frame %llu\n", findFrameNumberFromFrame(currentFrame));
-                    releaseLock(PTELock);
+                    ReleasePTELock(PTELock);
                     return;
                 }
 
                 if (victimPTELock != PTELock)
                 {
                     // Update victim PTE under its own lock, then reacquire PTELock.
-                    releaseLock(PTELock);
+                    ReleasePTELock(PTELock);
 
-                    acquireLock(victimPTELock);
+                    AcquirePTELock(victimPTELock);
                     PageTableEntry victimPteContents = {0};
                     victimPteContents.invalidFormat.mustBeZero = 0;
                     victimPteContents.invalidFormat.isTransitionFormat = 0;
                     victimPteContents.invalidFormat.diskIndex = currentFrame->diskIndex;
                     *victimPTE = victimPteContents;
-                    releaseLock(victimPTELock);
+                    ReleasePTELock(victimPTELock);
 
-                    acquireLock(PTELock);
+                    AcquirePTELock(PTELock);
 
                     // Re-check faulting PTE after temporarily dropping the lock.
                     pteContents = *currentPTE;
                     if (pteContents.validFormat.isValid == 1 && pteContents.validFormat.isTransitionFormat == 0)
                     {
-                        acquireLock(&standbyListLock);
+                        AcquireStandbyListLock();
                         addToFrameList(&standbyList, currentFrame);
-                        releaseLock(&standbyListLock);
-                        releaseLock(PTELock);
+                        ReleaseStandbyListLock();
+                        ReleasePTELock(PTELock);
                         return;
                     }
                 }
@@ -275,6 +267,10 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
                     victimPteContents.invalidFormat.isTransitionFormat = 0;
                     victimPteContents.invalidFormat.diskIndex = currentFrame->diskIndex;
                     *victimPTE = victimPteContents;
+                    
+                    // Crucial: Clear the disk index from the frame as it's now owned by the victim PTE on disk.
+                    // The frame is being repurposed for a new page.
+                    currentFrame->diskIndex = INVALID_DISK_SLOT;
                 }
             }
 
@@ -316,10 +312,10 @@ VOID resolvePageFault(PULONG_PTR arbitrary_va, PVOID context)
         currentFrame->PTE = currentPTE;
 
         // Add to active list (acquire lock in correct order)
-        acquireLock(&activeListLock);
+        AcquireActiveListLock();
         addToFrameListTail(&activeList, currentFrame);
-        releaseLock(&activeListLock);
+        ReleaseActiveListLock();
     }
 
-    releaseLock(PTELock);
+    ReleasePTELock(PTELock);
 }

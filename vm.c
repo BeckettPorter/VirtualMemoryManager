@@ -1,11 +1,20 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 #include <windows.h>
 
 #include "components/disk.h"
 #include "components/pages.h"
 #include "components/utilities.h"
+
+static VOID ResetFrameListsForNewRun(VOID);
+static BOOL ParseUnsignedArgument(const char* text, ULONG64* value);
+static VOID RunThreadSweep(ULONG64 maxThreads, ULONG64 runsPerCount);
+static VOID PrintUsage(const char* programName);
+
+static const char* ThreadSweepResultsFile = "thread_sweep_results.txt";
 
 //
 // This define enables code that lets us create multiple virtual address
@@ -289,32 +298,44 @@ VOID commit_at_fault_time_test (VOID)
     return;
 }
 
-VOID full_virtual_memory_test (VOID)
+static VOID ResetFrameListsForNewRun(VOID)
+{
+    memset(&freeList, 0, sizeof(freeList));
+    memset(&activeList, 0, sizeof(activeList));
+    memset(&modifiedList, 0, sizeof(modifiedList));
+    memset(&standbyList, 0, sizeof(standbyList));
+    numActiveUserThreads = 0;
+}
+
+ULONGLONG full_virtual_memory_test(ULONG64 userThreadCount)
 {
     BOOL allocated;
     BOOL privilege;
+    BOOL physicalPagesAllocated = FALSE;
+    HANDLE physical_page_handle = NULL;
+    ULONGLONG duration = 0;
+    ULONG64 totalThreadsThisRun = 0;
 
-    HANDLE physical_page_handle;
+    if (userThreadCount == 0 || userThreadCount > NUMBER_USER_THREADS)
+    {
+        printf("full_virtual_memory_test : invalid user thread count %llu (max %u)\n",
+               userThreadCount,
+               NUMBER_USER_THREADS);
+        return 0;
+    }
+
+    CurrentUserThreadCount = userThreadCount;
+    ResetFrameListsForNewRun();
 
     // Start our timer
     startTime = GetTickCount64();
-
-    //
-    // Allocate the physical pages that we will be managing.
-    //
-    // First acquire privilege to do this since physical page control
-    // is typically something the operating system reserves the sole
-    // right to do.
-    //
 
     privilege = GetPrivilege ();
 
     if (privilege == FALSE) {
         printf ("full_virtual_memory_test : could not get privilege\n");
-        return;
+        goto cleanup;
     }
-
-
 
 #if SUPPORT_MULTIPLE_VA_TO_SAME_PAGE
 
@@ -322,7 +343,7 @@ VOID full_virtual_memory_test (VOID)
 
     if (physical_page_handle == NULL) {
         printf ("CreateFileMapping2 failed, error %#x\n", GetLastError ());
-        return;
+        goto cleanup;
     }
 
 #else
@@ -336,9 +357,9 @@ VOID full_virtual_memory_test (VOID)
     physical_page_numbers = malloc (physical_page_count * sizeof (ULONG_PTR));
     DebugCheckPageArray = malloc (physical_page_count * sizeof (ULONG_PTR));
 
-    if (physical_page_numbers == NULL) {
+    if (physical_page_numbers == NULL || DebugCheckPageArray == NULL) {
         printf ("full_virtual_memory_test : could not allocate array to hold physical page numbers\n");
-        return;
+        goto cleanup;
     }
 
     allocated = AllocateUserPhysicalPages (physical_page_handle,
@@ -347,8 +368,10 @@ VOID full_virtual_memory_test (VOID)
 
     if (allocated == FALSE) {
         printf ("full_virtual_memory_test : could not allocate physical pages\n");
-        return;
+        goto cleanup;
     }
+
+    physicalPagesAllocated = TRUE;
 
     if (physical_page_count != NUMBER_OF_PHYSICAL_PAGES) {
 
@@ -357,23 +380,7 @@ VOID full_virtual_memory_test (VOID)
                 NUMBER_OF_PHYSICAL_PAGES);
     }
 
-    //
-    // Reserve a user address space region using the Windows kernel
-    // AWE (address windowing extensions) APIs.
-    //
-    // This will let us connect physical pages of our choosing to
-    // any given virtual address within our allocated region.
-    //
-    // We deliberately make this much larger than physical memory
-    // to illustrate how we can manage the illusion.
-    //
-
 #if SUPPORT_MULTIPLE_VA_TO_SAME_PAGE
-
-    //
-    // Allocate a MEM_PHYSICAL region that is "connected" to the AWE section
-    // created above.
-    //
 
     sharablePhysicalPages.Type = MemExtendedParameterUserPhysicalHandle;
     sharablePhysicalPages.Handle = physical_page_handle;
@@ -400,41 +407,93 @@ VOID full_virtual_memory_test (VOID)
         printf ("full_virtual_memory_test : could not reserve memory %x\n",
                 GetLastError ());
 
-        return;
+        goto cleanup;
     }
-
-    //
-    // Now perform random accesses.
-    //
-
 
     initListsAndPFNs();
     initDiskSpace();
     initThreads();
 
-    HANDLE threadFinishedEvents[TOTAL_NUMBER_OF_THREADS];
+    totalThreadsThisRun = CurrentUserThreadCount + NUMBER_TRIM_THREADS + NUMBER_DISK_THREADS;
 
-    for (ULONG64 i = 0; i < TOTAL_NUMBER_OF_THREADS; i++)
+    HANDLE threadFinishedEvents[TOTAL_NUMBER_OF_THREADS] = { 0 };
+
+    for (ULONG64 i = 0; i < totalThreadsThisRun; i++)
     {
         threadFinishedEvents[i] = threadInfoArray[i].ThreadHandle;
     }
 
-    // Wait until the program finished to continue and print.
-    WaitForMultipleObjects(TOTAL_NUMBER_OF_THREADS, threadFinishedEvents, TRUE, INFINITE);
+    WaitForMultipleObjects((DWORD)totalThreadsThisRun, threadFinishedEvents, TRUE, INFINITE);
 
-
-    // End our timer and print the time taken for the program to run.
     endTime = GetTickCount64();
-    printf ("full_virtual_memory_test : time taken %llums\n", endTime - startTime);
+    duration = endTime - startTime;
+    printf ("full_virtual_memory_test : time taken %llums\n", duration);
 
-    //
-    // Now that we're done with our memory we can be a good
-    // citizen and free it.
-    //
+cleanup:
+    cleanupThreadContexts(totalThreadsThisRun);
+    destroyEvents();
+    deleteCriticalSections();
 
-    VirtualFree (vaStartLoc, 0, MEM_RELEASE);
+    if (vaStartLoc != NULL) {
+        VirtualFree (vaStartLoc, 0, MEM_RELEASE);
+        vaStartLoc = NULL;
+    }
 
-    return;
+    if (transferVA != NULL) {
+        VirtualFree (transferVA, 0, MEM_RELEASE);
+        transferVA = NULL;
+    }
+
+    if (writeTransferVA != NULL) {
+        VirtualFree (writeTransferVA, 0, MEM_RELEASE);
+        writeTransferVA = NULL;
+    }
+
+    if (totalDiskSpace != NULL) {
+        free(totalDiskSpace);
+        totalDiskSpace = NULL;
+    }
+
+    if (diskSlotBitmap != NULL) {
+        free((void*)diskSlotBitmap);
+        diskSlotBitmap = NULL;
+        diskSlotBitmapLength = 0;
+    }
+
+    diskSearchStartIndex = 0;
+    currentTransferVAIndex = 0;
+
+    if (pageTable != NULL) {
+        free(pageTable);
+        pageTable = NULL;
+    }
+
+    if (pfnArray != NULL) {
+        VirtualFree(pfnArray, 0, MEM_RELEASE);
+        pfnArray = NULL;
+    }
+
+    if (DebugCheckPageArray != NULL) {
+        free(DebugCheckPageArray);
+        DebugCheckPageArray = NULL;
+    }
+
+    if (physical_page_numbers != NULL) {
+        if (physicalPagesAllocated && physical_page_handle != NULL) {
+            ULONG_PTR pagesToFree = physical_page_count;
+            FreeUserPhysicalPages(physical_page_handle, &pagesToFree, physical_page_numbers);
+        }
+        free (physical_page_numbers);
+        physical_page_numbers = NULL;
+    }
+
+    if (physical_page_handle != NULL && physical_page_handle != GetCurrentProcess ()) {
+        CloseHandle (physical_page_handle);
+    }
+
+    ResetFrameListsForNewRun();
+
+    return duration;
 }
 
 VOID 
@@ -443,53 +502,108 @@ main (
     char** argv
     )
 {
-    //
-    // Test a simple malloc implementation - we call the operating
-    // system to pay the up front cost to reserve and commit everything.
-    //
-    // Page faults will occur but the operating system will silently
-    // handle them under the covers invisibly to us.
-    //
+    if (argc >= 3)
+    {
+        ULONG64 maxUserThreads = 0;
+        ULONG64 runsPerThreadCount = 0;
 
-    // malloc_test ();
+        if (!ParseUnsignedArgument(argv[1], &maxUserThreads) ||
+            !ParseUnsignedArgument(argv[2], &runsPerThreadCount))
+        {
+            PrintUsage(argv[0]);
+            return;
+        }
 
-    //
-    // Test a slightly more complicated implementation - where we reserve
-    // a big virtual address range up front, and only commit virtual
-    // addresses as they get accessed.  This saves us from paying
-    // commit costs for any portions we don't actually access.  But
-    // the downside is what if we cannot commit it at the time of the
-    // fault !
-    //
+        if (maxUserThreads == 0 || maxUserThreads > NUMBER_USER_THREADS)
+        {
+            printf("Max user threads must be between 1 and %u\n", NUMBER_USER_THREADS);
+            return;
+        }
 
-    // commit_at_fault_time_test ();
+        if (runsPerThreadCount == 0)
+        {
+            printf("Runs per thread count must be at least 1\n");
+            return;
+        }
 
-    //
-    // Test our very complicated usermode virtual implementation.
-    // 
-    // We will control the virtual and physical address space management
-    // ourselves with the only two exceptions being that we will :
-    //
-    // 1. Ask the operating system for the physical pages we'll use to
-    //    form our pool.
-    //
-    // 2. Ask the operating system to connect one of our virtual addresses
-    //    to one of our physical pages (from our pool).
-    //
-    // We would do both of those operations ourselves but the operating
-    // system (for security reasons) does not allow us to.
-    //
-    // But we will do all the heavy lifting of maintaining translation
-    // tables, PFN data structures, management of physical pages,
-    // virtual memory operations like handling page faults, materializing
-    // mappings, freeing them, trimming them, writing them out to backing
-    // store, bringing them back from backing store, protecting them, etc.
-    //
-    // This is where we can be as creative as we like, the sky's the limit !
-    //
+        RunThreadSweep(maxUserThreads, runsPerThreadCount);
+        return;
+    }
 
-    // startTimer("Virtual Memory Test");
-    full_virtual_memory_test ();
-    // endTimer("Virtual Memory Test");
+    full_virtual_memory_test (NUMBER_USER_THREADS);
     return;
+}
+
+static BOOL ParseUnsignedArgument(const char* text, ULONG64* value)
+{
+    char* end = NULL;
+    errno = 0;
+    unsigned long long parsed = _strtoui64(text, &end, 10);
+
+    if (errno != 0 || end == text || *end != '\0')
+    {
+        return FALSE;
+    }
+
+    *value = parsed;
+    return TRUE;
+}
+
+static VOID RunThreadSweep(ULONG64 maxThreads, ULONG64 runsPerCount)
+{
+    if (maxThreads == 0 || runsPerCount == 0)
+    {
+        return;
+    }
+
+    FILE* resultsFile = NULL;
+    errno_t fileError = fopen_s(&resultsFile, ThreadSweepResultsFile, "w");
+
+    if (fileError != 0 || resultsFile == NULL)
+    {
+        printf("Could not open %s for writing (error %d)\n", ThreadSweepResultsFile, fileError);
+    }
+    else
+    {
+        fprintf(resultsFile, "%-14s%-14s%-14s\n", "thread_count", "runs", "avg_ms");
+    }
+
+    for (ULONG64 threadCount = 1; threadCount <= maxThreads; threadCount++)
+    {
+        ULONGLONG totalDuration = 0;
+
+        for (ULONG64 run = 0; run < runsPerCount; run++)
+        {
+            ULONGLONG duration = full_virtual_memory_test(threadCount);
+            totalDuration += duration;
+        }
+
+        double averageMs = (double) totalDuration / (double) runsPerCount;
+        printf("Average time for %llu user thread(s) across %llu run(s): %.2f ms\n",
+               threadCount,
+               runsPerCount,
+               averageMs);
+
+        if (resultsFile)
+        {
+            fprintf(resultsFile, "%-14llu%-14llu%-14.2f\n",
+                    threadCount,
+                    runsPerCount,
+                    averageMs);
+            fflush(resultsFile);
+        }
+    }
+
+    if (resultsFile)
+    {
+        fclose(resultsFile);
+        printf("Wrote sweep results to %s\n", ThreadSweepResultsFile);
+    }
+}
+
+static VOID PrintUsage(const char* programName)
+{
+    printf("Usage: %s <max_user_threads (1-%u)> <runs_per_thread_count>\n",
+           programName,
+           NUMBER_USER_THREADS);
 }

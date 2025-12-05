@@ -5,6 +5,7 @@
 #include "initialize.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include "disk.h"
 #include "utilities.h"
@@ -14,6 +15,8 @@
 
 
 MEM_EXTENDED_PARAMETER sharablePhysicalPages = { 0 };
+static BOOLEAN eventsInitialized = FALSE;
+static BOOLEAN criticalSectionsInitialized = FALSE;
 
 VOID initListsAndPFNs()
 {
@@ -122,6 +125,7 @@ VOID createEvents()
     finishedModWriteEvent = CreateEvent (NULL, MANUAL_RESET, EVENT_START_OFF, NULL);
 
     shutdownProgramEvent = CreateEvent (NULL, MANUAL_RESET, EVENT_START_OFF, NULL);
+    eventsInitialized = TRUE;
 }
 
 VOID initCriticalSections()
@@ -136,6 +140,7 @@ VOID initCriticalSections()
     {
         InitializeCriticalSection (&pteLockTable[i]);
     }
+    criticalSectionsInitialized = TRUE;
 }
 
 VOID createThreads()
@@ -144,10 +149,12 @@ VOID createThreads()
 
     PTHREAD_INFO currentThreadInfo;
 
+    ASSERT(CurrentUserThreadCount >= 1);
+    ASSERT(CurrentUserThreadCount <= NUMBER_USER_THREADS);
 
     // Create the user threads.
     numActiveUserThreads = 0;
-    for (ULONG64 i = 0; i < NUMBER_USER_THREADS; i++)
+    for (ULONG64 i = 0; i < CurrentUserThreadCount; i++)
     {
         currentThreadInfo = &threadInfoArray[currentThreadNumber];
         currentThreadInfo->ThreadNumber = currentThreadNumber;
@@ -164,8 +171,6 @@ VOID createThreads()
         currentThreadInfo->transferVAIndex = 0;
 
         currentThreadInfo->ThreadHandle = createNewThread(userThread, currentThreadInfo);
-
-        userThreadHandles[i] = currentThreadInfo->ThreadHandle;
 
         numActiveUserThreads++;
 
@@ -195,9 +200,95 @@ VOID createThreads()
     }
 }
 
+VOID destroyEvents()
+{
+    if (!eventsInitialized)
+    {
+        return;
+    }
 
+    if (trimEvent)
+    {
+        CloseHandle(trimEvent);
+        trimEvent = NULL;
+    }
 
+    if (stopTrimmingEvent)
+    {
+        CloseHandle(stopTrimmingEvent);
+        stopTrimmingEvent = NULL;
+    }
 
+    if (modWriteEvent)
+    {
+        CloseHandle(modWriteEvent);
+        modWriteEvent = NULL;
+    }
+
+    if (finishedModWriteEvent)
+    {
+        CloseHandle(finishedModWriteEvent);
+        finishedModWriteEvent = NULL;
+    }
+
+    if (shutdownProgramEvent)
+    {
+        CloseHandle(shutdownProgramEvent);
+        shutdownProgramEvent = NULL;
+    }
+
+    eventsInitialized = FALSE;
+}
+
+VOID deleteCriticalSections()
+{
+    if (!criticalSectionsInitialized)
+    {
+        return;
+    }
+
+    DeleteCriticalSection(&freeListLock);
+    DeleteCriticalSection(&activeListLock);
+    DeleteCriticalSection(&modifiedListLock);
+    DeleteCriticalSection(&standbyListLock);
+    DeleteCriticalSection(&threadCountLock);
+
+    for (ULONG64 i = 0; i < PTE_LOCK_REGION_COUNT; i++)
+    {
+        DeleteCriticalSection(&pteLockTable[i]);
+    }
+
+    criticalSectionsInitialized = FALSE;
+}
+
+VOID cleanupThreadContexts(ULONG64 totalThreads)
+{
+    if (totalThreads > TOTAL_NUMBER_OF_THREADS)
+    {
+        totalThreads = TOTAL_NUMBER_OF_THREADS;
+    }
+
+    for (ULONG64 i = 0; i < totalThreads; i++)
+    {
+        PTHREAD_INFO info = &threadInfoArray[i];
+
+        if (info->ThreadHandle != NULL)
+        {
+            CloseHandle(info->ThreadHandle);
+            info->ThreadHandle = NULL;
+        }
+
+        if (info->perThreadTransferVAs != NULL)
+        {
+            VirtualFree(info->perThreadTransferVAs, 0, MEM_RELEASE);
+            info->perThreadTransferVAs = NULL;
+        }
+
+        info->transferVAIndex = 0;
+    }
+
+    memset(threadInfoArray, 0, sizeof(threadInfoArray));
+}
 
 HANDLE createNewThread(LPTHREAD_START_ROUTINE ThreadFunction, PTHREAD_INFO ThreadContext)
 {

@@ -13,9 +13,9 @@
 
 
 // ratio of physical to virtual memory
-#define PHYS_TO_VIRTUAL_RATIO                           (0.8)
+#define PHYS_TO_VIRTUAL_RATIO                           (0.5)
 
-#define NUMBER_OF_PHYSICAL_PAGES                        (GB(1) / PAGE_SIZE)
+#define NUMBER_OF_PHYSICAL_PAGES                        (GB(2) / PAGE_SIZE)
 
 #define NUMBER_OF_VIRTUAL_PAGES                         ((ULONG64)((NUMBER_OF_PHYSICAL_PAGES) / (PHYS_TO_VIRTUAL_RATIO)))
 
@@ -28,10 +28,10 @@
 #define TRANSFER_VA_COUNT                               (512)
 #define NUMBER_OF_DISK_SLOTS                            (NUMBER_OF_VIRTUAL_PAGES)
 
-#define TEST_ITERATIONS MB                              (111)
+#define TEST_ITERATIONS                                 (MB(100))
 
 
-#define PTE_LOCK_REGION_COUNT                           (4096)
+#define PTE_LOCK_REGION_COUNT                           (65536)
 #define PTE_REGION_SIZE                                 (NUMBER_OF_VIRTUAL_PAGES / PTE_LOCK_REGION_COUNT)
 
 
@@ -106,6 +106,7 @@ typedef union
 typedef struct Frame
 {
     struct Frame* nextPFN;
+    struct Frame* prevPFN;
     PageTableEntry* PTE;
     // If this is 1, we are on the modified list, otherwise on the standby list.
     ULONG64 isOnModifiedList: 1;
@@ -175,7 +176,7 @@ extern MEM_EXTENDED_PARAMETER sharablePhysicalPages;
 // Thread variables
 THREAD_INFO threadInfoArray[TOTAL_NUMBER_OF_THREADS];
 
-HANDLE userThreadHandles[NUMBER_USER_THREADS];
+extern ULONG64 CurrentUserThreadCount;
 
 
 // Thread events
@@ -199,6 +200,9 @@ CRITICAL_SECTION threadCountLock;
 CRITICAL_SECTION pteLockTable[PTE_LOCK_REGION_COUNT];
 
 CRITICAL_SECTION* GetPTELock(PageTableEntry* pte);
+VOID AcquirePTELock(CRITICAL_SECTION* lock);
+VOID ReleasePTELock(CRITICAL_SECTION* lock);
+
 
 // LOCK HEIRARCHY
 // 1. PTE locks
@@ -237,5 +241,21 @@ VOID shutdownUserThread(int userThreadIndex);
 VOID acquireLock(CRITICAL_SECTION* lock);
 VOID releaseLock(CRITICAL_SECTION* lock);
 BOOL tryAcquireLock(CRITICAL_SECTION* lock);
+
+VOID AcquireFreeListLock();
+VOID ReleaseFreeListLock();
+
+VOID AcquireActiveListLock();
+VOID ReleaseActiveListLock();
+
+VOID AcquireModifiedListLock();
+VOID ReleaseModifiedListLock();
+
+VOID AcquireStandbyListLock();
+VOID ReleaseStandbyListLock();
+
+VOID AcquireThreadCountLock();
+VOID ReleaseThreadCountLock();
+
 
 #endif //UTILITIES_H

@@ -16,9 +16,10 @@ VOID initThreads();
 VOID createEvents();
 VOID initCriticalSections();
 VOID createThreads();
+VOID destroyEvents();
+VOID deleteCriticalSections();
+VOID cleanupThreadContexts(ULONG64 totalThreads);
 
 HANDLE createNewThread(LPTHREAD_START_ROUTINE ThreadFunction, PTHREAD_INFO ThreadContext);
-
-HANDLE threadFinishedEvents[TOTAL_NUMBER_OF_THREADS];
 
 #endif //INITIALIZE_H

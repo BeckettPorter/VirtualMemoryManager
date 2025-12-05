@@ -100,7 +100,7 @@ VOID swapToDisk()
 
     ULONG64 swapFrameNumbers[MAX_WRITE_PAGES];
 
-    acquireLock(&modifiedListLock);
+    AcquireModifiedListLock();
     for (ULONG64 i = 0; i < numSlotsFound; i++)
     {
 
@@ -120,7 +120,7 @@ VOID swapToDisk()
     }
 
     // Release list lock before performing IO
-    releaseLock(&modifiedListLock);
+    ReleaseModifiedListLock();
 
     // If there are no pages to swap, free any reserved disk slots and return.
     if (numPagesToActuallySwap == 0)
@@ -167,7 +167,7 @@ VOID swapToDisk()
         // Copy the contents of the VA to the disk space we are trying to write to.
         memcpy(totalDiskSpace + currentDiskSlot * PAGE_SIZE, copyVA, PAGE_SIZE);
 
-        acquireLock(&standbyListLock);
+        AcquireStandbyListLock();
 
         // Move frames still being written to the standby list.
         if (currentFrame->isBeingWritten == 1)
@@ -178,11 +178,11 @@ VOID swapToDisk()
 
             ASSERT(IsDiskSlotInUse(currentDiskSlot) == TRUE);
 
-            releaseLock(&standbyListLock);
+            ReleaseStandbyListLock();
         }
         else
         {
-            releaseLock(&standbyListLock);
+            ReleaseStandbyListLock();
 
             // Free disk slot if the frame was rescued before this write.
             ASSERT(IsDiskSlotInUse(currentDiskSlot) == TRUE);
